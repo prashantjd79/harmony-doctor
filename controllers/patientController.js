@@ -1,68 +1,256 @@
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
 const Patient = require('../models/patientModel');
-const { sendEmail } = require('../utils/email');
 const generateOTP = require('../utils/generateOTP');
 const jwt = require('jsonwebtoken');
 const Service = require('../models/serviceModel');
 const Session = require('../models/sessionModel');
 const Doctor = require('../models/doctorModel');
+const sendEmail = require("../utils/email"); // Import sendEmail utility function
 
 
 
 
 // Book a Session
-const bookSession = asyncHandler(async (req, res) => {
-    const { serviceId, doctorId, date, timeSlot } = req.body;
-    const patientId = req.user._id; // Assumes patient is authenticated
+// const bookSession = asyncHandler(async (req, res) => {
+//     const { serviceId, doctorId, date, timeSlot } = req.body;
+//     const patientId = req.user._id; // Assumes patient is authenticated
 
-    // Validate required fields
-    if (!serviceId || !doctorId || !date || !timeSlot) {
-        res.status(400);
-        throw new Error('All fields (serviceId, doctorId, date, timeSlot) are required');
-    }
+//     // Validate required fields
+//     if (!serviceId || !doctorId || !date || !timeSlot) {
+//         res.status(400);
+//         throw new Error('All fields (serviceId, doctorId, date, timeSlot) are required');
+//     }
 
-    // Ensure the doctor offers this service
-    const service = await Service.findById(serviceId);
-    if (!service) {
-        res.status(404);
-        throw new Error('Service not found');
-    }
+//     // Ensure the doctor offers this service
+//     const service = await Service.findById(serviceId);
+//     if (!service) {
+//         res.status(404);
+//         throw new Error('Service not found');
+//     }
 
-    const isDoctorService = service.doctorPricing.some(
-        (pricing) => pricing.doctor.toString() === doctorId
-    );
-    if (!isDoctorService) {
-        res.status(403);
-        throw new Error('This doctor does not provide the selected service');
-    }
+//     const isDoctorService = service.doctorPricing.some(
+//         (pricing) => pricing.doctor.toString() === doctorId
+//     );
+//     if (!isDoctorService) {
+//         res.status(403);
+//         throw new Error('This doctor does not provide the selected service');
+//     }
 
-    // Check for conflicting sessions
-    const existingSession = await Session.findOne({
-        doctor: doctorId,
-        date: new Date(date),
-        timeSlot,
-    });
+//     // Check for conflicting sessions
+//     const existingSession = await Session.findOne({
+//         doctor: doctorId,
+//         date: new Date(date),
+//         timeSlot,
+//     });
 
-    if (existingSession) {
-        res.status(400);
-        throw new Error('The doctor is already booked for this time slot');
-    }
+//     if (existingSession) {
+//         res.status(400);
+//         throw new Error('The doctor is already booked for this time slot');
+//     }
 
-    // Create the session
-    const session = await Session.create({
-        patient: patientId,
-        doctor: doctorId,
-        service: serviceId,
-        date: new Date(date),
-        timeSlot,
-    });
+//     // Create the session
+//     const session = await Session.create({
+//         patient: patientId,
+//         doctor: doctorId,
+//         service: serviceId,
+//         date: new Date(date),
+//         timeSlot,
+//     });
 
-    res.status(201).json({
-        message: 'Session booked successfully',
-        session,
-    });
+//     res.status(201).json({
+//         message: 'Session booked successfully',
+//         session,
+//     });
+// });
+
+require("dotenv").config(); // Load environment variables
+const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
+
+
+const AGORA_APP_ID = process.env.AGORA_APP_ID;
+const AGORA_APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE;
+const TOKEN_EXPIRATION_TIME = process.env.AGORA_TOKEN_EXPIRATION || 3600; // Default 1 hour
+
+
+const nodemailer = require("nodemailer");
+
+// Configure Nodemailer Transport
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER, // Add in .env
+        pass: process.env.EMAIL_PASS, // Add in .env
+    },
 });
+const moment = require('moment'); // Import moment.js for time parsing
+
+
+const generateAgoraToken = (channelName, userId) => {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const privilegeExpireTime = currentTime + TOKEN_EXPIRATION_TIME;
+
+    return RtcTokenBuilder.buildTokenWithUid(
+        AGORA_APP_ID,
+        AGORA_APP_CERTIFICATE,
+        channelName,
+        userId,
+        RtcRole.PUBLISHER,
+        privilegeExpireTime
+    );
+};
+
+
+
+
+
+const bookSession = asyncHandler(async (req, res) => {
+    try {
+        console.log("Received Request Body:", req.body);
+
+        const { serviceId, doctorId, date, timeSlot, email, paymentAmount } = req.body;
+        const patientId = req.user?._id;
+
+        if (!serviceId || !doctorId || !date || !timeSlot || !email || !paymentAmount) {
+            return res.status(400).json({ error: "All fields (serviceId, doctorId, date, timeSlot, email, paymentAmount) are required" });
+        }
+
+        if (!patientId) {
+            return res.status(401).json({ error: "Patient authentication failed" });
+        }
+
+        // 🔹 Fetch the doctor's availability
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) {
+            return res.status(404).json({ error: "Doctor not found" });
+        }
+
+        // 🔹 Ensure date matches doctor's availability
+        const doctorAvailability = doctor.availability.find(avail =>
+            moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
+        );
+
+        if (!doctorAvailability) {
+            return res.status(400).json({ error: "Doctor is not available on this date." });
+        }
+
+        // 🔹 Convert selected time slot into start and end timestamps
+        const [startTime, endTime] = timeSlot.split(" - ").map(t => moment(t, "hh:mm A"));
+
+        if (!startTime.isValid() || !endTime.isValid()) {
+            return res.status(400).json({ error: "Invalid time slot format. Use '2 PM - 3 PM' format." });
+        }
+
+        // 🔥 **Strict Validation: Ensure Only Hourly Slots**
+        if (startTime.minute() !== 0 || endTime.minute() !== 0) {
+            return res.status(400).json({ error: "Invalid time slot. You can only book full hours (e.g., '2 PM - 3 PM')." });
+        }
+
+        // 🔹 Ensure time slot is within the doctor's available hours
+        const isAvailableSlot = doctorAvailability.slots.some(slot => {
+            const availableStart = moment(slot.start, "hh A");
+            const availableEnd = moment(slot.end, "hh A");
+            return startTime.isSameOrAfter(availableStart) && endTime.isSameOrBefore(availableEnd);
+        });
+
+        if (!isAvailableSlot) {
+            return res.status(400).json({ error: "Selected time slot is outside the doctor's available hours." });
+        }
+
+        // 🔥 **Check for already booked hour slots**
+        const overlappingSession = await Session.findOne({
+            doctor: doctorId,
+            date: new Date(date),
+            timeSlot: timeSlot, // Exact hour match only
+        });
+
+        if (overlappingSession) {
+            return res.status(400).json({ error: "The selected time slot is already booked. Choose a different hour." });
+        }
+
+        // 🔹 Validate payment amount
+        const service = await Service.findById(serviceId);
+        if (!service) {
+            return res.status(404).json({ error: "Service not found" });
+        }
+
+        const doctorServicePricing = service.doctorPricing.find(pricing => pricing.doctor.toString() === doctorId);
+        if (!doctorServicePricing) {
+            return res.status(403).json({ error: "This doctor does not provide the selected service" });
+        }
+
+        if (paymentAmount !== doctorServicePricing.fee) {
+            return res.status(400).json({ error: `Incorrect payment amount. The required fee is ${doctorServicePricing.fee}` });
+        }
+
+        // ✅ Generate Agora Video Call Credentials
+        const agoraChannel = `session_${doctorId}_${patientId}_${Date.now()}`;
+        const doctorToken = generateAgoraToken(agoraChannel, doctorId);
+        const patientToken = generateAgoraToken(agoraChannel, patientId);
+
+        // ✅ Create the session in MongoDB
+        const session = await Session.create({
+            patient: patientId,
+            doctor: doctorId,
+            service: serviceId,
+            date: new Date(date),
+            timeSlot,
+            videoCall: {
+                channelName: agoraChannel,
+                doctorToken,
+                patientToken,
+                callStatus: "Not Started",
+            },
+            paymentDetails: { status: "Paid" },
+        });
+
+        console.log("Session Created Successfully:", session);
+
+        // ✅ Send Confirmation Email to the Patient
+        await sendEmail({
+            to: email,
+            subject: "Session Booking Confirmation",
+            text: `Your session with Doctor ID: ${doctorId} is booked for ${date} at ${timeSlot}. Payment of ${paymentAmount} received successfully.`,
+        });
+
+        res.status(201).json({
+            message: "Session booked successfully. Email sent to patient.",
+            session,
+        });
+    } catch (error) {
+        console.error("Error in bookSession:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -476,8 +664,79 @@ const getDoctorById = asyncHandler(async (req, res) => {
 
 
 
+// 🟢 Start Video Call (Generates Agora Tokens for Patient & Doctor)
+const startVideoCall = asyncHandler(async (req, res) => {
+    const { sessionId } = req.params;
+    const patientId = req.user._id;
+
+    // Find session by ID
+    const session = await Session.findById(sessionId);
+    if (!session) {
+        res.status(404);
+        throw new Error("Session not found");
+    }
+
+    // Check if the logged-in patient is the session owner
+    if (session.patient.toString() !== patientId.toString()) {
+        res.status(403);
+        throw new Error("Access denied. You are not authorized to start this call.");
+    }
+
+    // Generate Agora Channel & Tokens
+    const channelName = `session_${session.doctor}_${session.patient}_${Date.now()}`;
+    const doctorToken = `fakeToken_${session.doctor}_${Date.now()}`;
+    const patientToken = `fakeToken_${session.patient}_${Date.now()}`;
+
+    // Update session with video call details
+    session.videoCall = {
+        channelName,
+        doctorToken,
+        patientToken,
+        callStatus: "In Progress",
+    };
+
+    await session.save();
+
+    res.status(200).json({
+        message: "Call started successfully",
+        session,
+    });
+});
+
+// 🔴 End Video Call (Marks session as Completed)
+const endVideoCall = asyncHandler(async (req, res) => {
+    const { sessionId } = req.params;
+    const patientId = req.user._id;
+
+    // Find session
+    const session = await Session.findById(sessionId);
+    if (!session) {
+        res.status(404);
+        throw new Error("Session not found");
+    }
+
+    // Check authorization
+    if (session.patient.toString() !== patientId.toString()) {
+        res.status(403);
+        throw new Error("Access denied. You are not authorized to end this call.");
+    }
+
+    // Mark call as completed
+    session.videoCall.callStatus = "Completed";
+    session.status = "Completed";
+    await session.save();
+
+    res.status(200).json({
+        message: "Call ended successfully",
+        session,
+    });
+});
+
+
+
+
 
 
 module.exports = { signupPatient, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall};
 

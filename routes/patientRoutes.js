@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect,patientProtect } = require('../middleware/authMiddleware');
 const { uploadMedicalHistory } = require('../controllers/patientController');
 const upload = require('../middleware/uploadMiddleware');
 const {
@@ -8,6 +8,7 @@ const {
     verifyEmail,
     loginPatient,
     viewServices,
+    startVideoCall,endVideoCall,
     bookSession, addJournalEntry, viewJournals, deleteJournalEntry,getAvailableSlots,
     payForSession, viewPaymentHistory, getAllDoctors, getDoctorById
 } = require('../controllers/patientController');
@@ -29,4 +30,9 @@ router.get('/doctors', protect, getAllDoctors);
 
 // Get specific doctor by ID
 router.get('/doctors/:doctorId', protect, getDoctorById);
+router.post("/book-session", protect, patientProtect, bookSession);
+router.put("/video-call/start/:sessionId", protect, patientProtect, startVideoCall);
+
+// End Video Call (Mark session as completed)
+router.put("/video-call/end/:sessionId", protect, patientProtect, endVideoCall);
 module.exports = router;
