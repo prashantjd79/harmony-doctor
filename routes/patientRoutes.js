@@ -63,6 +63,7 @@ const {
     getAllDoctors,
     getDoctorById,
     getPatientSessionHistory,
+    getUpcomingSessions
     
 } = require("../controllers/patientController");
 
@@ -103,6 +104,6 @@ router.post("/medical-history", protect, upload.single("file"), uploadMedicalHis
 router.post("/pay", protect, payForSession);
 router.get("/payment-history", protect, viewPaymentHistory);
 
-
+router.get('/sessions/upcoming', protect, patientProtect, getUpcomingSessions);
 
 module.exports = router;

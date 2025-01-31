@@ -823,7 +823,29 @@ const endVideoCall = asyncHandler(async (req, res) => {
 
 
 
+// 📌 Get Upcoming Sessions for a Patient
+const getUpcomingSessions = asyncHandler(async (req, res) => {
+    const patientId = req.user.id;  // Assuming `req.user.id` is set after authentication
 
-module.exports = { signupPatient, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
+    // ✅ Find upcoming sessions for the logged-in patient
+    const upcomingSessions = await Session.find({
+        patient: patientId,
+        date: { $gte: moment().startOf('day').toDate() }, // Sessions from today onwards
+        status: { $in: ["Scheduled", "Rescheduled"] } // Only active sessions
+    }).populate('doctor', 'name specialization') // Populate doctor details
+      .populate('service', 'name') // Populate service details
+      .sort({ date: 1 }); // Sort by nearest upcoming date
+
+    res.status(200).json({
+        message: "Upcoming sessions retrieved successfully.",
+        upcomingSessions
+    });
+});
+
+
+
+
+
+module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
     viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory};
 
