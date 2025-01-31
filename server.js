@@ -8,6 +8,9 @@ const patientRoutes = require('./routes/patientRoutes');
 const managerRoutes = require('./routes/managerRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+
+
 
 
 const path = require('path');
@@ -23,6 +26,7 @@ app.use('/api/managers', managerRoutes);
 app.use('/api/creators', creatorRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/chats', chatRoutes);
 app.use((err, req, res, next) => {
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     res.status(statusCode).json({

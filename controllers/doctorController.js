@@ -416,11 +416,34 @@ const viewUserProfile = asyncHandler(async (req, res) => {
 
 
 
+const getDoctorSessionHistory = asyncHandler(async (req, res) => {
+    const doctorId = req.user._id; // Get logged-in doctor ID
+
+    // Fetch session history for the doctor
+    const sessions = await Session.find({ doctor: doctorId })
+        .populate("patient", "name email") // Populate patient details
+        .populate("service", "name") // Populate service name
+        .sort({ date: -1 });
+
+    res.status(200).json({
+        message: "Doctor session history retrieved successfully",
+        sessions: sessions.map(session => ({
+            _id: session._id,
+            patient: session.patient, // Doctor can see patient details
+            service: session.service.name, // Service name only
+            date: session.date,
+            timeSlot: session.timeSlot,
+            status: session.status,
+            videoCall: session.videoCall,
+            createdAt: session.createdAt
+        }))
+    });
+});
 
 
 
 
 
-module.exports = { getCategories, getServices,viewUpcomingSessions,viewPatientProfile,enrollPricing ,updateAvailability ,createSessionUnderDoctor,viewUserProfile};
+module.exports = { getCategories, getServices,viewUpcomingSessions,viewPatientProfile,enrollPricing ,updateAvailability ,createSessionUnderDoctor,viewUserProfile,getDoctorSessionHistory};
 
 

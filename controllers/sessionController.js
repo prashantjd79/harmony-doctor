@@ -9,6 +9,48 @@ const asyncHandler = require('express-async-handler');
 
 
 
+const moment = require('moment');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ✅ Mark Doctor as Absent
+const markDoctorAbsent = asyncHandler(async (req, res) => {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+    }
+
+    const session = await Session.findById(sessionId);
+
+    if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+    }
+
+    // ✅ Update session status to "Doctor Absent"
+    session.status = "Doctor Absent";
+    await session.save();
+
+    res.status(200).json({
+        message: "Doctor marked as absent successfully",
+        session,
+    });
+});
+
+
 
 
 
@@ -59,4 +101,6 @@ const rescheduleAppointment = asyncHandler(async (req, res) => {
     });
 });
 
-module.exports = { rescheduleAppointment };
+
+
+module.exports = { rescheduleAppointment,markDoctorAbsent };

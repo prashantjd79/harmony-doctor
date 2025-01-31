@@ -240,6 +240,60 @@ const bookSession = asyncHandler(async (req, res) => {
 
 
 
+const mongoose = require("mongoose");
+
+
+const getPatientSessionHistory = asyncHandler(async (req, res) => {
+    const patientId = req.user._id; // Get logged-in patient ID
+
+    console.log("Fetching session history for Patient ID:", patientId);
+
+    try {
+        // Convert `patientId` to ObjectId format
+        const patientObjectId = new mongoose.Types.ObjectId(patientId);
+
+        // Fetch session history from the database
+        const sessions = await Session.find({ patient: patientObjectId })
+            .populate("doctor", "name email specialization") // Populate doctor details
+            .populate("service", "name price") // Populate service details
+            .sort({ date: -1 });
+
+        console.log("Raw Session Data from MongoDB:", sessions);
+
+        if (!sessions || sessions.length === 0) {
+            console.log("❌ No sessions found for the patient.");
+            return res.status(200).json({
+                message: "No sessions found for this patient.",
+                sessions: [],
+            });
+        }
+
+        // Transforming the response
+        const formattedSessions = sessions.map(session => ({
+            _id: session._id,
+            doctor: session.doctor,
+            service: session.service.name,
+            servicePrice: session.service.price,
+            date: session.date,
+            timeSlot: session.timeSlot,
+            status: session.status,
+            paymentStatus: session.paymentDetails ? session.paymentDetails.status : "Unknown",
+            videoCall: session.videoCall,
+            createdAt: session.createdAt
+        }));
+
+        console.log("✅ Processed Sessions Data:", formattedSessions);
+
+        res.status(200).json({
+            message: "Patient session history retrieved successfully",
+            sessions: formattedSessions,
+        });
+    } catch (error) {
+        console.error("❌ Error in getPatientSessionHistory:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 
 
 
@@ -469,51 +523,84 @@ const deleteJournalEntry = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Journal entry deleted successfully' });
 });
 
-
-// Get Available Time Slots
 const getAvailableSlots = asyncHandler(async (req, res) => {
-    const { doctorId, serviceId, date } = req.body;
+    try {
+        console.log("Received Request Body:", req.body);
 
-    // Validate inputs
-    if (!doctorId || !serviceId || !date) {
-        res.status(400);
-        throw new Error('Doctor ID, Service ID, and Date are required');
+        const { doctorId, date } = req.body;
+
+        if (!doctorId || !date) {
+            console.log("❌ Missing doctorId or date in request.");
+            return res.status(400).json({ error: "Doctor ID and date are required." });
+        }
+
+        // 🔹 Fetch doctor availability
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) {
+            console.log("❌ Doctor not found:", doctorId);
+            return res.status(404).json({ error: "Doctor not found." });
+        }
+
+        console.log("✅ Doctor found:", doctor.name);
+
+        const doctorAvailability = doctor.availability.find(avail =>
+            moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
+        );
+
+        if (!doctorAvailability) {
+            console.log("❌ Doctor is not available on this date:", date);
+            return res.status(400).json({ error: "Doctor is not available on this date." });
+        }
+
+        console.log("✅ Doctor availability on", date, ":", doctorAvailability);
+
+        // 🔹 Fetch booked sessions for the selected date
+        const bookedSessions = await Session.find({ doctor: doctorId, date: new Date(date) });
+
+        console.log("📌 Booked sessions found:", bookedSessions.length, "sessions");
+        console.log("📌 Booked session details:", bookedSessions);
+
+        // 🔹 Extract booked time slots
+        const bookedTimes = bookedSessions.map(session => session.timeSlot.split(" - ")[0]); // Get start hour (e.g., "2 PM")
+        console.log("🚫 Booked Times:", bookedTimes);
+
+        let availableSlots = [];
+        doctorAvailability.slots.forEach(slot => {
+            const startHour = slot.start.split(":")[0] + " PM"; // Convert to match booked format (e.g., "2 PM")
+            const endHour = slot.end.split(":")[0] + " PM";
+
+            let start = moment(startHour, "h A");
+            let end = moment(endHour, "h A");
+
+            while (start.isBefore(end)) {
+                let slotStart = start.format("h A");
+                let slotEnd = start.add(1, 'hour').format("h A");
+
+                if (!bookedTimes.includes(slotStart)) {
+                    availableSlots.push({ start: slotStart, end: slotEnd, status: "Available" });
+                }
+            }
+        });
+
+        console.log("✅ Final Updated Available Slots:", availableSlots);
+
+        res.status(200).json({
+            message: "Available slots retrieved successfully.",
+            availableSlots,
+        });
+    } catch (error) {
+        console.error("❌ Error in getAvailableSlots:", error);
+        res.status(500).json({ error: error.message });
     }
-
-    // Fetch the doctor
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-        res.status(404);
-        throw new Error('Doctor not found');
-    }
-
-    // Define time slots (you can customize these)
-    const timeSlots = [
-        "09:00 AM - 09:30 AM",
-        "10:00 AM - 10:30 AM",
-        "11:00 AM - 11:30 AM",
-        "02:00 PM - 02:30 PM",
-        "03:00 PM - 03:30 PM",
-        "04:00 PM - 04:30 PM",
-    ];
-
-    // Find booked slots for the given doctor and date
-    const bookedSessions = await Session.find({
-        doctor: doctorId,
-        date: new Date(date),
-    }).select('timeSlot');
-
-    const bookedTimeSlots = bookedSessions.map((session) => session.timeSlot);
-
-    // Filter out booked time slots
-    const availableTimeSlots = timeSlots.filter(
-        (slot) => !bookedTimeSlots.includes(slot)
-    );
-
-    res.status(200).json({
-        availableTimeSlots,
-    });
 });
+
+
+
+
+
+
+
+
 
 
 
@@ -738,5 +825,5 @@ const endVideoCall = asyncHandler(async (req, res) => {
 
 
 module.exports = { signupPatient, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory};
 

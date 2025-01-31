@@ -1,38 +1,108 @@
-const express = require('express');
+// const express = require('express');
+// const router = express.Router();
+// const { protect,patientProtect } = require('../middleware/authMiddleware');
+// const { uploadMedicalHistory } = require('../controllers/patientController');
+// const upload = require('../middleware/uploadMiddleware');
+// const {
+//     signupPatient,
+//     verifyEmail,
+//     loginPatient,
+//     viewServices,
+//     startVideoCall,endVideoCall,
+//     bookSession, addJournalEntry, viewJournals, deleteJournalEntry,getAvailableSlots,
+//     payForSession, viewPaymentHistory, getAllDoctors, getDoctorById,getPatientSessionHistory
+// } = require('../controllers/patientController');
+
+// router.post('/signup', signupPatient); // Signup
+// router.post('/verify-email', verifyEmail); // Email Verification
+// router.post('/login', loginPatient); // Login
+// router.get('/services', viewServices); 
+// router.post('/book-session', protect, bookSession);
+// router.post('/journals', protect, addJournalEntry); // Add a journal entry
+// router.get('/journals', protect, viewJournals); // View all journal entries
+// router.delete('/journals/:journalId', protect, deleteJournalEntry); // Delete a journal entry
+// router.get("/available-slots", getAvailableSlots); 
+
+// router.post('/pay', protect, payForSession);
+// router.post('/medical-history', protect, upload.single('file'), uploadMedicalHistory);
+// // View payment history
+// router.get('/payment-history', protect, viewPaymentHistory);
+// router.get('/doctors', protect, getAllDoctors);
+
+// // Get specific doctor by ID
+// router.get('/doctors/:doctorId', protect, getDoctorById);
+// router.post("/book-session", protect, patientProtect, bookSession);
+// router.put("/video-call/start/:sessionId", protect, patientProtect, startVideoCall);
+
+// // End Video Call (Mark session as completed)
+// router.put("/video-call/end/:sessionId", protect, patientProtect, endVideoCall);
+// router.get("/session-history", protect, getPatientSessionHistory);
+
+// module.exports = router;
+
+
+const express = require("express");
 const router = express.Router();
-const { protect,patientProtect } = require('../middleware/authMiddleware');
-const { uploadMedicalHistory } = require('../controllers/patientController');
-const upload = require('../middleware/uploadMiddleware');
+const { protect, patientProtect } = require("../middleware/authMiddleware");
+const { uploadMedicalHistory } = require("../controllers/patientController");
+const upload = require("../middleware/uploadMiddleware");
 const {
     signupPatient,
     verifyEmail,
     loginPatient,
     viewServices,
-    startVideoCall,endVideoCall,
-    bookSession, addJournalEntry, viewJournals, deleteJournalEntry,getAvailableSlots,
-    payForSession, viewPaymentHistory, getAllDoctors, getDoctorById
-} = require('../controllers/patientController');
+    startVideoCall,
+    endVideoCall,
+    bookSession,
+    addJournalEntry,
+    viewJournals,
+    deleteJournalEntry,
+    getAvailableSlots,
+    payForSession,
+    viewPaymentHistory,
+    getAllDoctors,
+    getDoctorById,
+    getPatientSessionHistory,
+    
+} = require("../controllers/patientController");
 
-router.post('/signup', signupPatient); // Signup
-router.post('/verify-email', verifyEmail); // Email Verification
-router.post('/login', loginPatient); // Login
-router.get('/services', viewServices); 
-router.post('/book-session', protect, bookSession);
-router.post('/journals', protect, addJournalEntry); // Add a journal entry
-router.get('/journals', protect, viewJournals); // View all journal entries
-router.delete('/journals/:journalId', protect, deleteJournalEntry); // Delete a journal entry
-router.post('/available-slots', protect, getAvailableSlots);
-router.post('/pay', protect, payForSession);
-router.post('/medical-history', protect, upload.single('file'), uploadMedicalHistory);
-// View payment history
-router.get('/payment-history', protect, viewPaymentHistory);
-router.get('/doctors', protect, getAllDoctors);
 
-// Get specific doctor by ID
-router.get('/doctors/:doctorId', protect, getDoctorById);
+
+const { markDoctorAbsent } = require("../controllers/sessionController");
+// ✅ Patient Authentication & Signup
+router.put("/sessions/mark-absent", protect, markDoctorAbsent);
+router.post("/signup", signupPatient);
+router.post("/verify-email", verifyEmail);
+router.post("/login", loginPatient);
+
+// ✅ Viewing Services & Doctors
+router.get("/services", protect, viewServices);
+router.get("/doctors", protect, getAllDoctors);
+router.get("/doctors/:doctorId", protect, getDoctorById);
+
+// ✅ Booking & Sessions
+router.post("/available-slots", protect, getAvailableSlots);
+
+
 router.post("/book-session", protect, patientProtect, bookSession);
-router.put("/video-call/start/:sessionId", protect, patientProtect, startVideoCall);
+router.get("/session-history", protect, getPatientSessionHistory);
 
-// End Video Call (Mark session as completed)
+// ✅ Video Call Functionality
+router.put("/video-call/start/:sessionId", protect, patientProtect, startVideoCall);
 router.put("/video-call/end/:sessionId", protect, patientProtect, endVideoCall);
+
+// ✅ Journals
+router.post("/journals", protect, addJournalEntry);
+router.get("/journals", protect, viewJournals);
+router.delete("/journals/:journalId", protect, deleteJournalEntry);
+
+// ✅ Medical History Upload
+router.post("/medical-history", protect, upload.single("file"), uploadMedicalHistory);
+
+// ✅ Payments
+router.post("/pay", protect, payForSession);
+router.get("/payment-history", protect, viewPaymentHistory);
+
+
+
 module.exports = router;

@@ -61,7 +61,7 @@ const sessionSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["Scheduled", "Completed", "Cancelled", "Paid"],
+        enum: ["Scheduled", "Completed", "Cancelled", "Paid", "Doctor Absent"],
         default: "Scheduled",
     },
     paymentDetails: {
