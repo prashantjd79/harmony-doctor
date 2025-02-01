@@ -21,7 +21,11 @@ const app = express();
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/admin', adminRoutes);
+// app.use('/api/doctor', doctorRoutes);
 app.use('/api/doctor', doctorRoutes);
+
+ 
+
 app.use('/api/managers', managerRoutes);
 app.use('/api/creators', creatorRoutes);
 app.use('/api/tickets', ticketRoutes);
