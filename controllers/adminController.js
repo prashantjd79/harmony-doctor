@@ -5,6 +5,13 @@ const Doctor = require('../models/doctorModel');
 const Service = require('../models/serviceModel');
 
 
+// Ensure the path is correct
+ // Ensure the path is correct
+
+
+ // Make sure this path is correct
+
+
 
 
 // const createService = asyncHandler(async (req, res) => {
@@ -168,6 +175,41 @@ const getServices = asyncHandler(async (req, res) => {
     res.status(200).json(services);
 });
 
+
+// Get Service by ID
+const getServiceById = asyncHandler(async (req, res) => {
+    const { serviceId } = req.params;
+
+    const service = await Service.findById(serviceId);
+    if (!service) {
+        res.status(404);
+        throw new Error("Service not found");
+    }
+
+    res.status(200).json(service);
+});
+
+
+const getManagers = asyncHandler(async (req, res) => {
+    try {
+        const managers = await Manager.find().select("-password"); // Exclude sensitive data
+        res.status(200).json(managers);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching managers", error: error.message });
+    }
+});
+
+const getCreators = asyncHandler(async (req, res) => {
+    try {
+        const creators = await Creator.find().select("-password"); // Exclude sensitive data
+        res.status(200).json(creators);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching creators", error: error.message });
+    }
+});
+
+
+
 // Update Service
 const updateService = asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -214,12 +256,6 @@ const deleteService = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Service deleted successfully' });
 });
 
-module.exports = {
-    createService,
-    getServices,
-    updateService,
-    deleteService,
-};
 
 
 // Create Category
@@ -429,6 +465,7 @@ module.exports = {
     viewDoctorProfiles,
     approveDoctor,
     approveCreator,
-    approveManager,assignToManager
+    approveManager,assignToManager,
+    getServiceById,getManagers,getCreators
 };
 

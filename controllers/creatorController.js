@@ -340,23 +340,23 @@ const getBlogById = asyncHandler(async (req, res) => {
 
 
 
-const deleteBlog = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// const deleteBlog = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
 
-    console.log('Request Params (ID):', id);
+//     console.log('Request Params (ID):', id);
 
-    const blog = await Blog.findById(id);
-    if (!blog) {
-        res.status(404);
-        throw new Error('Blog not found');
-    }
+//     const blog = await Blog.findById(id);
+//     if (!blog) {
+//         res.status(404);
+//         throw new Error('Blog not found');
+//     }
 
-    await blog.remove();
+//     await blog.remove();
 
-    res.status(200).json({
-        message: 'Blog deleted successfully',
-    });
-});
+//     res.status(200).json({
+//         message: 'Blog deleted successfully',
+//     });
+// });
 
 
 
@@ -552,6 +552,106 @@ const deleteYoutubeBlog = asyncHandler(async (req, res) => {
 });
 
 
+// ✅ Get All Blogs
+const getAllBlogs = asyncHandler(async (req, res) => {
+    try {
+        const blogs = await Blog.find().sort({ createdAt: -1 }); // Fetch all blogs sorted by latest
+        res.status(200).json({
+            success: true,
+            count: blogs.length,
+            blogs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching blogs",
+            error: error.message
+        });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+// ✅ Delete a Blog by ID
+const deleteBlog = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // 🔹 Step 1: Find the blog by ID
+        const blog = await Blog.findById(id);
+        if (!blog) {
+            res.status(404);
+            throw new Error("Blog not found");
+        }
+
+        // 🔹 Step 2: Fix field name from `creatorId` to `creator`
+        if (!blog.creator) {
+            res.status(400);
+            throw new Error("This blog is missing a creator ID in the database.");
+        }
+
+        // 🔹 Step 3: Ensure the logged-in creator is the owner of the blog
+        if (!req.user || !req.user._id) {
+            res.status(401);
+            throw new Error("Unauthorized: No user found in request.");
+        }
+
+        if (blog.creator.toString() !== req.user._id.toString()) {
+            res.status(403);
+            throw new Error("Unauthorized: You can only delete your own blog.");
+        }
+
+        // 🔹 Step 4: Delete the blog
+        await Blog.findByIdAndDelete(id);
+        res.status(200).json({ message: "Blog deleted successfully" });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting blog", error: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const getAllYouTubeBlogs = asyncHandler(async (req, res) => {
+    try {
+        // 🔹 Fetch all YouTube blogs sorted by latest
+        const youtubeBlogs = await YoutubeBlog.find().sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: youtubeBlogs.length,
+            youtubeBlogs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching YouTube blogs",
+            error: error.message
+        });
+    }
+});
+
 module.exports={creatorSignup,creatorLogin, createArticle,
     getArticles,
     getArticleById,
@@ -562,4 +662,4 @@ module.exports={creatorSignup,creatorLogin, createArticle,
     updateYoutubeBlog,
     deleteYoutubeBlog,
     getYoutubeBlogById,
-createBlog,updateBlog,deleteBlog};
+createBlog,updateBlog,deleteBlog,getAllYouTubeBlogs,getAllBlogs};

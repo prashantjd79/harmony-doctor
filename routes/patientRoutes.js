@@ -46,6 +46,7 @@ const router = express.Router();
 const { protect, patientProtect } = require("../middleware/authMiddleware");
 const { uploadMedicalHistory } = require("../controllers/patientController");
 const { submitSessionReview } = require('../controllers/patientController');
+const { getAllCategories } = require("../controllers/patientController");
 const upload = require("../middleware/uploadMiddleware");
 const { submitMood, getMoodHistory  } = require('../controllers/moodController');
 const { submitMoodContinuum, getMoodContinuumHistory } = require('../controllers/moodContinuumController');
@@ -116,5 +117,5 @@ router.post('/mood/submit', protect, submitMoodContinuum);
 
 // 📌 Get Mood Continuum History
 router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
-
+router.get("/categories", protect, patientProtect, getAllCategories);
 module.exports = router;

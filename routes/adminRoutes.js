@@ -15,7 +15,8 @@ const {
     viewDoctorProfiles,
     approveDoctor,
     approveManager,
-    approveCreator,assignToManager
+    approveCreator,assignToManager,
+    getServiceById,getManagers,getCreators
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
@@ -43,5 +44,10 @@ router.put('/doctors/:id/approve', protect, approveDoctor); // Approve a doctor
 router.put('/approve-manager/:id', approveManager); // Approve Manager
 router.put('/approve-creator/:id', approveCreator); // Approve Creator
 router.put('/assign-to-manager', protect, adminProtect, assignToManager);
+
+router.get("/managers", protect, adminProtect, getManagers);
+router.get("/service/:serviceId", protect, adminProtect, getServiceById);
+router.get("/creators", protect, adminProtect, getCreators);
+
 
 module.exports = router;

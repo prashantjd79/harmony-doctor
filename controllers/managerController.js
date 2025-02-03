@@ -206,4 +206,50 @@ const viewProfile = asyncHandler(async (req, res) => {
     res.status(200).json(user);
 });
 
-module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,replyToTicket,viewProfile};
+
+
+
+
+// ✅ Get All Managers
+const getAllManagers = asyncHandler(async (req, res) => {
+    try {
+        const managers = await Manager.find().sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: managers.length,
+            managers
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching managers",
+            error: error.message
+        });
+    }
+});
+
+// ✅ Get All Patients
+const getAllPatients = asyncHandler(async (req, res) => {
+    try {
+        const patients = await Patient.find().sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: patients.length,
+            patients
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching patients",
+            error: error.message
+        });
+    }
+});
+
+
+
+
+
+module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,replyToTicket,viewProfile,getAllManagers,getAllPatients};

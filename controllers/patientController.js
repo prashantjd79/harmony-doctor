@@ -7,7 +7,7 @@ const Service = require('../models/serviceModel');
 const Session = require('../models/sessionModel');
 const Doctor = require('../models/doctorModel');
 const sendEmail = require("../utils/email"); // Import sendEmail utility function
-
+const Category = require("../models/categoryModel");
 
 
 
@@ -1100,11 +1100,27 @@ const submitSessionReview = asyncHandler(async (req, res) => {
 });
 
 
+const getAllCategories = asyncHandler(async (req, res) => {
+    try {
+        const categories = await Category.find().sort({ createdAt: -1 });
 
+        res.status(200).json({
+            success: true,
+            count: categories.length,
+            categories
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching categories",
+            error: error.message
+        });
+    }
+});
 
 
 
 
 module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories};
 
