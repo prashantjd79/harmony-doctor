@@ -83,14 +83,17 @@ const {
     viewPatientProfile, 
     enrollPricing, 
     updateAvailability, 
+    
      
 } = require('../controllers/doctorController');
-const { getDoctorSessions } = require('../controllers/doctorController');
+const { getDoctorSessions, } = require('../controllers/doctorController');
 const { protect, doctorProtect } = require('../middleware/authMiddleware');
 
 // 🔐 Authentication
 router.post('/signup', doctorSignup);
 router.post('/login', doctorLogin);
+
+
 
 // 📌 Doctor Services
 router.get('/categories', protect, doctorProtect, getCategories);

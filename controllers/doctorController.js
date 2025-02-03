@@ -1,45 +1,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const Category = require('../models/categoryModel');
 const asyncHandler = require('express-async-handler');
 const Service = require('../models/serviceModel');
@@ -237,6 +198,8 @@ const getDoctorSessions = asyncHandler(async (req, res) => {
 
 
 
+
+
 module.exports = { 
     getCategories, 
     getServices, 
@@ -244,5 +207,6 @@ module.exports = {
     viewPatientProfile, 
     enrollPricing, 
     updateAvailability, 
-    getDoctorSessions
+    getDoctorSessions,
+    
 };

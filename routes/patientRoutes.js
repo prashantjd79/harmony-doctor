@@ -45,7 +45,9 @@ const express = require("express");
 const router = express.Router();
 const { protect, patientProtect } = require("../middleware/authMiddleware");
 const { uploadMedicalHistory } = require("../controllers/patientController");
+const { submitSessionReview } = require('../controllers/patientController');
 const upload = require("../middleware/uploadMiddleware");
+const { submitMood, getMoodHistory } = require('../controllers/moodController');
 const {
     signupPatient,
     verifyEmail,
@@ -75,7 +77,7 @@ router.put("/sessions/mark-absent", protect, markDoctorAbsent);
 router.post("/signup", signupPatient);
 router.post("/verify-email", verifyEmail);
 router.post("/login", loginPatient);
-
+router.put('/sessions/:sessionId/review', protect, submitSessionReview);
 // ✅ Viewing Services & Doctors
 router.get("/services", protect, viewServices);
 router.get("/doctors", protect, getAllDoctors);
@@ -105,5 +107,8 @@ router.post("/pay", protect, payForSession);
 router.get("/payment-history", protect, viewPaymentHistory);
 
 router.get('/sessions/upcoming', protect, patientProtect, getUpcomingSessions);
+
+router.post('/mood', protect, submitMood); // Submit mood
+router.get('/mood/history', protect, getMoodHistory); // View mood history
 
 module.exports = router;
