@@ -47,7 +47,8 @@ const { protect, patientProtect } = require("../middleware/authMiddleware");
 const { uploadMedicalHistory } = require("../controllers/patientController");
 const { submitSessionReview } = require('../controllers/patientController');
 const upload = require("../middleware/uploadMiddleware");
-const { submitMood, getMoodHistory ,submitMoodContinuum, getMoodContinuum } = require('../controllers/moodController');
+const { submitMood, getMoodHistory  } = require('../controllers/moodController');
+const { submitMoodContinuum, getMoodContinuumHistory } = require('../controllers/moodContinuumController');
 const {
     signupPatient,
     verifyEmail,
@@ -111,10 +112,9 @@ router.get('/sessions/upcoming', protect, patientProtect, getUpcomingSessions);
 router.post('/mood', protect, submitMood); // Submit mood
 router.get('/mood/history', protect, getMoodHistory); // View mood history
 
-router.post("/mood/submit", protect, submitMoodContinuum);
+router.post('/mood/submit', protect, submitMoodContinuum);
 
-// 📌 Get Mood History and Average Score
-router.get("/mood/continuum-history", protect, getMoodContinuum);
-
+// 📌 Get Mood Continuum History
+router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
 
 module.exports = router;
