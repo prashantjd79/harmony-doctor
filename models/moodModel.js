@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const moodSchema = new mongoose.Schema({
     patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+    moodScore: { type: Number, required: true, min: 1, max: 4 },
     mood: { 
         type: String, 
         enum: ['Happy', 'Sad', 'Angry', 'Anxious', 'Stressed', 'Excited', 'Neutral','Bored','Confused','Frustrated','Shy','Surprised','Lonely','Tired'], 
