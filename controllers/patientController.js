@@ -305,7 +305,7 @@ const bookSession = asyncHandler(async (req, res) => {
         }
 
         // ✅ Generate Agora Video Call Credentials
-        const agoraChannel = `session_${doctorId}_${patientId}_${Date.now()}`;
+        const agoraChannel = `session${doctorId}${patientId}${Date.now()}`;
         const doctorToken = generateAgoraToken(agoraChannel, doctorId);
         const patientToken = generateAgoraToken(agoraChannel, patientId);
 
