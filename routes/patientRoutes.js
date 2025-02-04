@@ -46,10 +46,11 @@ const router = express.Router();
 const { protect, patientProtect } = require("../middleware/authMiddleware");
 const { uploadMedicalHistory } = require("../controllers/patientController");
 const { submitSessionReview } = require('../controllers/patientController');
-const { getTransactions } = require("../controllers/patientController");
+
 const upload = require("../middleware/uploadMiddleware");
 const { submitMood, getMoodHistory  } = require('../controllers/moodController');
 const { applyPromoCode } = require("../controllers/patientController");
+const { getPatientPromoCodes } = require("../controllers/patientController");
 const { submitMoodContinuum, getMoodContinuumHistory } = require('../controllers/moodContinuumController');
 const {
     signupPatient,
@@ -118,7 +119,8 @@ router.post('/mood/submit', protect, submitMoodContinuum);
 
 // 📌 Get Mood Continuum History
 router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
-router.get("/transactions", protect, patientProtect, getTransactions);
+
 router.post("/apply-promo-code", protect, patientProtect, applyPromoCode);
+router.get("/promo-codes/:patientId", protect, patientProtect, getPatientPromoCodes);
 
 module.exports = router;

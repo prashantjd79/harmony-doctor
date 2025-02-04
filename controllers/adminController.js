@@ -46,46 +46,32 @@ const createPromoCode = asyncHandler(async (req, res) => {
 
 
 
-// ✅ 2. Get All Promo Codes
+
 const getAllPromoCodes = asyncHandler(async (req, res) => {
     try {
         const promoCodes = await PromoCode.find().sort({ createdAt: -1 });
+
         res.status(200).json({
             success: true,
             count: promoCodes.length,
             promoCodes
         });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching promo codes", error: error.message });
+        res.status(500).json({
+            message: "Error fetching promo codes",
+            error: error.message
+        });
     }
 });
 
-// ✅ 3. Update a Promo Code
-const updatePromoCode = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { code, discountPercentage, validTill, applicableTransactions, specialForMentalHealth } = req.body;
 
-    try {
-        const promoCode = await PromoCode.findById(id);
-        if (!promoCode) {
-            res.status(404);
-            throw new Error("Promo Code not found");
-        }
 
-        promoCode.code = code || promoCode.code;
-        promoCode.discountPercentage = discountPercentage || promoCode.discountPercentage;
-        promoCode.validTill = validTill || promoCode.validTill;
-        promoCode.applicableTransactions = applicableTransactions || promoCode.applicableTransactions;
-        promoCode.specialForMentalHealth = specialForMentalHealth !== undefined ? specialForMentalHealth : promoCode.specialForMentalHealth;
 
-        await promoCode.save();
-        res.status(200).json({ success: true, message: "Promo Code updated successfully", promoCode });
-    } catch (error) {
-        res.status(500).json({ message: "Error updating promo code", error: error.message });
-    }
-});
 
-// ✅ 4. Delete a Promo Code
+
+
+
+// ✅ Delete Promo Code (Admin)
 const deletePromoCode = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -96,12 +82,22 @@ const deletePromoCode = asyncHandler(async (req, res) => {
             throw new Error("Promo Code not found");
         }
 
-        await promoCode.remove();
-        res.status(200).json({ success: true, message: "Promo Code deleted successfully" });
+        await promoCode.deleteOne(); // ✅ Remove promo code from database
+
+        res.status(200).json({
+            success: true,
+            message: "Promo Code deleted successfully"
+        });
     } catch (error) {
-        res.status(500).json({ message: "Error deleting promo code", error: error.message });
+        res.status(500).json({
+            message: "Error deleting promo code",
+            error: error.message
+        });
     }
 });
+
+
+
 
 
 
@@ -569,7 +565,7 @@ module.exports = {
     approveManager,assignToManager,
     getServiceById,getManagers,getCreators,
     
- createPromoCode, getAllPromoCodes, updatePromoCode, deletePromoCode,
+ createPromoCode, getAllPromoCodes,  deletePromoCode,
 
 };
 

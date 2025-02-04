@@ -8,7 +8,7 @@ const Session = require('../models/sessionModel');
 const Doctor = require('../models/doctorModel');
 const sendEmail = require("../utils/email"); // Import sendEmail utility function
 const Category = require("../models/categoryModel");
-
+const MoodContinuum = require("../models/moodContinuumModel");
 
 
 
@@ -19,7 +19,9 @@ const PromoCode = require("../models/promoCodeModel");
 
 
 
-// ✅ Apply Promo Code (Separate Logic for Transaction & Mental Health)
+
+
+// ✅ Apply Promo Code (Fix Mental Health Check)
 const applyPromoCode = asyncHandler(async (req, res) => {
     const { code, patientId, transactionCount } = req.body;
 
@@ -29,6 +31,19 @@ const applyPromoCode = asyncHandler(async (req, res) => {
             res.status(404);
             throw new Error("Invalid Promo Code");
         }
+
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+            res.status(404);
+            throw new Error("Patient not found");
+        }
+
+        // ✅ Fetch patient's latest mental health score from `moodcontinuums`
+        const latestMood = await MoodContinuum.findOne({ patient: patientId })
+            .sort({ createdAt: -1 }) // Get the most recent mood entry
+            .select("moodScore"); // Only select moodScore
+
+        const mentalHealthScore = latestMood ? latestMood.moodScore : null;
 
         // ✅ Condition 1: Check if promo code is for a specific transaction
         if (promoCode.applicableTransactions !== null) {
@@ -40,22 +55,33 @@ const applyPromoCode = asyncHandler(async (req, res) => {
 
         // ✅ Condition 2: Check for mental health condition
         if (promoCode.specialForMentalHealth) {
-            const patient = await Patient.findById(patientId);
-            if (!patient) {
-                res.status(404);
-                throw new Error("Patient not found");
-            }
-
-            if (!patient.mentalHealthScore || patient.mentalHealthScore <= 2.0) {
+            if (!mentalHealthScore || mentalHealthScore <= 2.0) {
                 res.status(400);
                 throw new Error("This promo code is only for patients with mental health score > 2.0");
             }
         }
 
+        // ✅ Check if patient already used this promo code
+        const alreadyUsed = patient.usedPromoCodes.some(p => p.code === code);
+        if (alreadyUsed) {
+            res.status(400);
+            throw new Error("You have already used this promo code.");
+        }
+
+        // ✅ Store the applied promo code in the patient's record
+        patient.usedPromoCodes.push({
+            code: promoCode.code,
+            discountPercentage: promoCode.discountPercentage,
+            appliedAt: new Date()
+        });
+
+        await patient.save(); // ✅ Save changes
+
         res.status(200).json({
             success: true,
             message: "Promo Code applied successfully",
-            discount: promoCode.discountPercentage
+            discount: promoCode.discountPercentage,
+            appliedPromoCodes: patient.usedPromoCodes
         });
     } catch (error) {
         res.status(500).json({ message: "Error applying promo code", error: error.message });
@@ -68,25 +94,12 @@ const applyPromoCode = asyncHandler(async (req, res) => {
 
 
 
-// ✅ Get Transaction History for a Patient
-const getTransactions = asyncHandler(async (req, res) => {
-    try {
-        const patientId = req.user._id; // Logged-in patient ID
-        const transactions = await Transaction.find({ patient: patientId }).sort({ createdAt: -1 });
 
-        res.status(200).json({
-            success: true,
-            count: transactions.length,
-            transactions
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching transactions",
-            error: error.message
-        });
-    }
-});
+
+
+
+
+
 
 
 
@@ -1207,6 +1220,48 @@ const getAllCategories = asyncHandler(async (req, res) => {
 
 
 
+// ✅ Get Promo Codes for a Specific Patient
+const getPatientPromoCodes = asyncHandler(async (req, res) => {
+    const { patientId } = req.params; // Get patient ID from request params
+
+    try {
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+            res.status(404);
+            throw new Error("Patient not found");
+        }
+
+        // ✅ Fetch all available promo codes
+        let promoCodes = await PromoCode.find({
+            $or: [
+                { specialForMentalHealth: false }, // ✅ Promo codes that are available for everyone
+                { specialForMentalHealth: true, applicableTransactions: null } // ✅ Only mental health-based promo codes
+            ]
+        }).sort({ createdAt: -1 });
+
+        // ✅ If patient has a mental health score > 2.0, show all promos
+        if (patient.mentalHealthScore && patient.mentalHealthScore > 2.0) {
+            promoCodes = await PromoCode.find().sort({ createdAt: -1 });
+        }
+
+        res.status(200).json({
+            success: true,
+            count: promoCodes.length,
+            promoCodes
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Error fetching promo codes",
+            error: error.message
+        });
+    }
+});
+
+
+
+
+
+
 module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getTransactions};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getPatientPromoCodes};
 

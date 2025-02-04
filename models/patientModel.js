@@ -45,6 +45,14 @@ const patientSchema = new mongoose.Schema(
                 read: { type: Boolean, default: false }, // Read/unread status
             },
         ],
+        usedPromoCodes: [
+            {
+                code: { type: String },
+                discountPercentage: { type: Number },
+                appliedAt: { type: Date, default: Date.now }
+            }
+        ],
+        createdAt: { type: Date, default: Date.now } // ✅ Stor
         
     },
     { timestamps: true } // Automatically manage createdAt and updatedAt fields
