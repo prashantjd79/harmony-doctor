@@ -20,6 +20,7 @@ const {
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
+const { createPromoCode, getAllPromoCodes, updatePromoCode, deletePromoCode, } = require("../controllers/adminController");
 
 // Authentication routes
 router.post('/signup', adminSignup);
@@ -48,6 +49,15 @@ router.put('/assign-to-manager', protect, adminProtect, assignToManager);
 router.get("/managers", protect, adminProtect, getManagers);
 router.get("/service/:serviceId", protect, adminProtect, getServiceById);
 router.get("/creators", protect, adminProtect, getCreators);
+
+
+
+router.post("/promo-code", protect, adminProtect, createPromoCode);
+router.get("/promo-codes", protect, adminProtect, getAllPromoCodes);
+router.put("/promo-code/:id", protect, adminProtect, updatePromoCode);
+router.delete("/promo-code/:id", protect, adminProtect, deletePromoCode);
+
+
 
 
 module.exports = router;

@@ -3,6 +3,107 @@ const asyncHandler = require('express-async-handler');
 const Session = require('../models/sessionModel');
 const Doctor = require('../models/doctorModel');
 const Service = require('../models/serviceModel');
+const PromoCode = require("../models/promoCodeModel");
+const Patient = require("../models/patientModel");
+
+
+
+
+
+
+
+// ✅ Create a Promo Code (Either for Transactions or Mental Health)
+const createPromoCode = asyncHandler(async (req, res) => {
+    const { code, discountPercentage, validTill, applicableTransactions, specialForMentalHealth } = req.body;
+
+    try {
+        // Check if promo code already exists
+        const existingPromo = await PromoCode.findOne({ code });
+        if (existingPromo) {
+            res.status(400);
+            throw new Error("Promo code already exists.");
+        }
+
+        // Create new promo code
+        const newPromo = await PromoCode.create({
+            code,
+            discountPercentage,
+            validTill,
+            applicableTransactions: applicableTransactions || null, // ✅ Transaction-based promo
+            specialForMentalHealth: specialForMentalHealth || false // ✅ Mental health-based promo
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Promo Code created successfully",
+            promoCode: newPromo
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error creating promo code", error: error.message });
+    }
+});
+
+
+
+
+// ✅ 2. Get All Promo Codes
+const getAllPromoCodes = asyncHandler(async (req, res) => {
+    try {
+        const promoCodes = await PromoCode.find().sort({ createdAt: -1 });
+        res.status(200).json({
+            success: true,
+            count: promoCodes.length,
+            promoCodes
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching promo codes", error: error.message });
+    }
+});
+
+// ✅ 3. Update a Promo Code
+const updatePromoCode = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { code, discountPercentage, validTill, applicableTransactions, specialForMentalHealth } = req.body;
+
+    try {
+        const promoCode = await PromoCode.findById(id);
+        if (!promoCode) {
+            res.status(404);
+            throw new Error("Promo Code not found");
+        }
+
+        promoCode.code = code || promoCode.code;
+        promoCode.discountPercentage = discountPercentage || promoCode.discountPercentage;
+        promoCode.validTill = validTill || promoCode.validTill;
+        promoCode.applicableTransactions = applicableTransactions || promoCode.applicableTransactions;
+        promoCode.specialForMentalHealth = specialForMentalHealth !== undefined ? specialForMentalHealth : promoCode.specialForMentalHealth;
+
+        await promoCode.save();
+        res.status(200).json({ success: true, message: "Promo Code updated successfully", promoCode });
+    } catch (error) {
+        res.status(500).json({ message: "Error updating promo code", error: error.message });
+    }
+});
+
+// ✅ 4. Delete a Promo Code
+const deletePromoCode = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const promoCode = await PromoCode.findById(id);
+        if (!promoCode) {
+            res.status(404);
+            throw new Error("Promo Code not found");
+        }
+
+        await promoCode.remove();
+        res.status(200).json({ success: true, message: "Promo Code deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting promo code", error: error.message });
+    }
+});
+
+
 
 
 // Ensure the path is correct
@@ -466,6 +567,9 @@ module.exports = {
     approveDoctor,
     approveCreator,
     approveManager,assignToManager,
-    getServiceById,getManagers,getCreators
+    getServiceById,getManagers,getCreators,
+    
+ createPromoCode, getAllPromoCodes, updatePromoCode, deletePromoCode,
+
 };
 

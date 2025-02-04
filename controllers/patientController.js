@@ -11,6 +11,88 @@ const Category = require("../models/categoryModel");
 
 
 
+
+const PromoCode = require("../models/promoCodeModel");
+
+
+
+
+
+
+// ✅ Apply Promo Code (Separate Logic for Transaction & Mental Health)
+const applyPromoCode = asyncHandler(async (req, res) => {
+    const { code, patientId, transactionCount } = req.body;
+
+    try {
+        const promoCode = await PromoCode.findOne({ code });
+        if (!promoCode) {
+            res.status(404);
+            throw new Error("Invalid Promo Code");
+        }
+
+        // ✅ Condition 1: Check if promo code is for a specific transaction
+        if (promoCode.applicableTransactions !== null) {
+            if (transactionCount !== promoCode.applicableTransactions) {
+                res.status(400);
+                throw new Error(`This promo code is only valid for transaction #${promoCode.applicableTransactions}`);
+            }
+        }
+
+        // ✅ Condition 2: Check for mental health condition
+        if (promoCode.specialForMentalHealth) {
+            const patient = await Patient.findById(patientId);
+            if (!patient) {
+                res.status(404);
+                throw new Error("Patient not found");
+            }
+
+            if (!patient.mentalHealthScore || patient.mentalHealthScore <= 2.0) {
+                res.status(400);
+                throw new Error("This promo code is only for patients with mental health score > 2.0");
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Promo Code applied successfully",
+            discount: promoCode.discountPercentage
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Error applying promo code", error: error.message });
+    }
+});
+
+
+
+
+
+
+
+// ✅ Get Transaction History for a Patient
+const getTransactions = asyncHandler(async (req, res) => {
+    try {
+        const patientId = req.user._id; // Logged-in patient ID
+        const transactions = await Transaction.find({ patient: patientId }).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: transactions.length,
+            transactions
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching transactions",
+            error: error.message
+        });
+    }
+});
+
+
+
+
+
+
 // Book a Session
 // const bookSession = asyncHandler(async (req, res) => {
 //     const { serviceId, doctorId, date, timeSlot } = req.body;
@@ -65,7 +147,7 @@ const Category = require("../models/categoryModel");
 // });
 
 require("dotenv").config(); // Load environment variables
-const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
+const { RtcTokenBuilder, RtcRole } = require("agora-token");
 
 
 const AGORA_APP_ID = process.env.AGORA_APP_ID;
@@ -85,19 +167,23 @@ const transporter = nodemailer.createTransport({
 });
 const moment = require('moment'); // Import moment.js for time parsing
 
-
 const generateAgoraToken = (channelName, userId) => {
-    const currentTime = Math.floor(Date.now() / 1000);
-    const privilegeExpireTime = currentTime + TOKEN_EXPIRATION_TIME;
+	const appId = process.env.AGORA_APP_ID;
+	const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+	const role = RtcRole.PUBLISHER;
+	const tokenExpirationInSecond = 3600;
+	const privilegeExpirationInSecond = 3600;
+	const tokenWithUserAccount = RtcTokenBuilder.buildTokenWithUid(
+		appId,
+		appCertificate,
+		channelName,
+		0,
+		role,
+		tokenExpirationInSecond,
+		privilegeExpirationInSecond
+	);
 
-    return RtcTokenBuilder.buildTokenWithUid(
-        AGORA_APP_ID,
-        AGORA_APP_CERTIFICATE,
-        channelName,
-        userId,
-        RtcRole.PUBLISHER,
-        privilegeExpireTime
-    );
+	return tokenWithUserAccount;
 };
 
 
@@ -1122,5 +1208,5 @@ const getAllCategories = asyncHandler(async (req, res) => {
 
 
 module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getTransactions};
 
