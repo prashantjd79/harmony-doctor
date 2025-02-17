@@ -1140,6 +1140,63 @@ const getUpcomingSessions = asyncHandler(async (req, res) => {
 
 
 
+// const submitSessionReview = asyncHandler(async (req, res) => {
+//     const { sessionId } = req.params;
+//     const { rating, comment } = req.body;
+//     const patientId = req.user._id; // Logged-in patient
+
+//     // Validate inputs
+//     if (!rating || rating < 1 || rating > 5) {
+//         res.status(400);
+//         throw new Error("Rating must be between 1 and 5");
+//     }
+
+//     // Find the session
+//     const session = await Session.findById(sessionId);
+//     if (!session) {
+//         res.status(404);
+//         throw new Error("Session not found");
+//     }
+
+//     // Ensure the session is completed
+//     if (session.status !== "Completed") {
+//         res.status(400);
+//         throw new Error("You can only review completed sessions");
+//     }
+
+//     // Ensure the `reviews` array exists
+//     if (!session.reviews) {
+//         session.reviews = [];
+//     }
+
+//     // Check if the patient has already submitted a review
+//     const existingReviewIndex = session.reviews.findIndex(
+//         (review) => review.patient.toString() === patientId.toString()
+//     );
+
+//     if (existingReviewIndex !== -1) {
+//         // Patient has already reviewed → Update existing review
+//         session.reviews[existingReviewIndex].rating = rating;
+//         session.reviews[existingReviewIndex].comment = comment;
+//         session.reviews[existingReviewIndex].createdAt = new Date();
+//     } else {
+//         // Add new review if the patient hasn't reviewed before
+//         session.reviews.push({
+//             patient: patientId,
+//             rating,
+//             comment,
+//             createdAt: new Date(),
+//         });
+//     }
+
+//     // Save updated session to database
+//     await session.save();
+
+//     res.status(200).json({
+//         message: "Review submitted successfully",
+//         reviews: session.reviews,
+//     });
+// });
 const submitSessionReview = asyncHandler(async (req, res) => {
     const { sessionId } = req.params;
     const { rating, comment } = req.body;

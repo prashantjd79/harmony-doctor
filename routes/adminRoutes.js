@@ -16,7 +16,7 @@ const {
     viewDoctorProfiles,
     approveDoctor,
     approveManager,
-    approveCreator,assignToManager,
+    approveCreator,assignToManager,getAllReviews,
     getServiceById,getManagers,getCreators,getTopConsultants,getTopCategories,getTopServices
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
@@ -26,6 +26,7 @@ const { createPromoCode, getAllPromoCodes,  deletePromoCode, } = require("../con
 // Authentication routes
 router.post('/signup', adminSignup);
 router.post('/login', adminLogin);
+router.get("/reviews", protect, adminProtect, getAllReviews);
 
 // Category routes (protected)
 router.get("/stats", protect, adminProtect, getAdminStats);

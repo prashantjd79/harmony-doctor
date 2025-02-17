@@ -717,6 +717,47 @@ const getTopCategories = asyncHandler(async (req, res) => {
 
     res.status(200).json(categories);
 });
+const getAllReviews = asyncHandler(async (req, res) => {
+    const reviews = await Session.aggregate([
+        { $match: { status: "Completed", reviews: { $exists: true, $ne: [] } } }, // Only completed sessions with reviews
+        { $unwind: "$reviews" }, // Expand the reviews array
+        {
+            $lookup: {
+                from: "patients",
+                localField: "reviews.patient",
+                foreignField: "_id",
+                as: "patientDetails"
+            }
+        },
+        {
+            $lookup: {
+                from: "doctors",
+                localField: "doctor",
+                foreignField: "_id",
+                as: "doctorDetails"
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                doctorId: { $arrayElemAt: ["$doctorDetails._id", 0] },
+                doctorName: { $arrayElemAt: ["$doctorDetails.name", 0] },
+                patientId: { $arrayElemAt: ["$patientDetails._id", 0] },
+                patientName: { $arrayElemAt: ["$patientDetails.name", 0] },
+                rating: "$reviews.rating",
+                comment: "$reviews.comment",
+                createdAt: "$reviews.createdAt"
+            }
+        },
+        { $sort: { createdAt: -1 } } // Sort by most recent reviews
+    ]);
+
+    if (!reviews.length) {
+        return res.status(404).json({ message: "No reviews found" });
+    }
+
+    res.status(200).json(reviews);
+});
 
 module.exports = {
     createCategory,
@@ -732,7 +773,7 @@ module.exports = {
     approveDoctor,
     approveCreator,
     approveManager,assignToManager,
-    getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,
+    getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,getAllReviews,
     
  createPromoCode, getAllPromoCodes,  deletePromoCode,
 
