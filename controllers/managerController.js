@@ -10,7 +10,75 @@ const Patient = require('../models/patientModel');
 const Ticket = require('../models/ticketModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const Creator = require('../models/creatorModel');
+const getManagerStats = asyncHandler(async (req, res) => {
+    // Fetch numbers dynamically from the database
+    const totalManagers = await Manager.countDocuments({});
+    const activeManagers = await Manager.countDocuments({ isApproved: true });
+    const inactiveManagers = await Manager.countDocuments({ isActive: false });
+    const temporarilyOffManagers = await Manager.countDocuments({ isDisabled: true });
 
+    const totalCreators = await Creator.countDocuments({});
+    const activeCreators = await Creator.countDocuments({ isApproved: true });
+    const inactiveCreators = await Creator.countDocuments({ isActive: false });
+    const temporarilyOffCreators = await Creator.countDocuments({ isDisabled: true });
+    const pendingCreators = await Creator.countDocuments({ isApproved: false });
+
+    const totalYtContent = await YoutubeBlog.countDocuments({});
+    const pendingYtContent = await YoutubeBlog.countDocuments({ isApproved: false });
+    const publishYtContent = await YoutubeBlog.countDocuments({ isApproved: true });
+    const unpublishYtContent = await YoutubeBlog.countDocuments({ isPublished: false });
+    const improveYtContent = await YoutubeBlog.countDocuments({ needsImprovement: true });
+    const rejectedYtContent = await YoutubeBlog.countDocuments({ isRejected: true });
+
+    const totalBlogs = await Blog.countDocuments({});
+    const pendingBlogs = await Blog.countDocuments({ isApproved: false });
+    const publishBlogs = await Blog.countDocuments({ isApproved: true });
+    const unpublishBlogs = await Blog.countDocuments({ isPublished: false });
+    const improveBlogs = await Blog.countDocuments({ needsImprovement: true });
+    const rejectedBlogs = await Blog.countDocuments({ isRejected: true });
+
+    const totalArticles = await Article.countDocuments({});
+    const pendingArticles = await Article.countDocuments({ isApproved: false });
+    const publishArticles = await Article.countDocuments({ isApproved: true });
+    const unpublishArticles = await Article.countDocuments({ isPublished: false });
+    const improveArticles = await Article.countDocuments({ needsImprovement: true });
+    const rejectedArticles = await Article.countDocuments({ isRejected: true });
+
+    res.status(200).json({
+        totalManagers: { number: totalManagers, name: "Total Managers" },
+        activeManagers: { number: activeManagers, name: "Active Managers" },
+        inactiveManagers: { number: inactiveManagers, name: "Inactive Managers" },
+        temporarilyOffManagers: { number: temporarilyOffManagers, name: "Temporarily Off Managers" },
+
+        totalCreators: { number: totalCreators, name: "Total Creators" },
+        activeCreators: { number: activeCreators, name: "Active Creators" },
+        inactiveCreators: { number: inactiveCreators, name: "Inactive Creators" },
+        temporarilyOffCreators: { number: temporarilyOffCreators, name: "Temporarily Off Creators" },
+        pendingCreators: { number: pendingCreators, name: "Pending Creators" },
+
+        totalYtContent: { number: totalYtContent, name: "Total YouTube Content" },
+        pendingYtContent: { number: pendingYtContent, name: "Pending YouTube Content" },
+        publishYtContent: { number: publishYtContent, name: "Published YouTube Content" },
+        unpublishYtContent: { number: unpublishYtContent, name: "Unpublished YouTube Content" },
+        improveYtContent: { number: improveYtContent, name: "YouTube Content Needing Improvement" },
+        rejectedYtContent: { number: rejectedYtContent, name: "Rejected YouTube Content" },
+
+        totalBlogs: { number: totalBlogs, name: "Total Blogs" },
+        pendingBlogs: { number: pendingBlogs, name: "Pending Blogs" },
+        publishBlogs: { number: publishBlogs, name: "Published Blogs" },
+        unpublishBlogs: { number: unpublishBlogs, name: "Unpublished Blogs" },
+        improveBlogs: { number: improveBlogs, name: "Blogs Needing Improvement" },
+        rejectedBlogs: { number: rejectedBlogs, name: "Rejected Blogs" },
+
+        totalArticles: { number: totalArticles, name: "Total Articles" },
+        pendingArticles: { number: pendingArticles, name: "Pending Articles" },
+        publishArticles: { number: publishArticles, name: "Published Articles" },
+        unpublishArticles: { number: unpublishArticles, name: "Unpublished Articles" },
+        improveArticles: { number: improveArticles, name: "Articles Needing Improvement" },
+        rejectedArticles: { number: rejectedArticles, name: "Rejected Articles" }
+    });
+});
 
 // Manager Login
 const managerLogin = asyncHandler(async (req, res) => {
@@ -252,4 +320,4 @@ const getAllPatients = asyncHandler(async (req, res) => {
 
 
 
-module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,replyToTicket,viewProfile,getAllManagers,getAllPatients};
+module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,replyToTicket,viewProfile,getAllManagers,getAllPatients,getManagerStats};

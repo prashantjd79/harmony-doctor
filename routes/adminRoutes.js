@@ -1,5 +1,6 @@
 const express = require('express');
 const { adminProtect } = require('../middleware/authMiddleware');
+const { getAdminStats } = require("../controllers/adminController");
 
 const router = express.Router();
 const {
@@ -16,7 +17,7 @@ const {
     approveDoctor,
     approveManager,
     approveCreator,assignToManager,
-    getServiceById,getManagers,getCreators
+    getServiceById,getManagers,getCreators,getTopConsultants,getTopCategories,getTopServices
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
@@ -27,6 +28,13 @@ router.post('/signup', adminSignup);
 router.post('/login', adminLogin);
 
 // Category routes (protected)
+router.get("/stats", protect, adminProtect, getAdminStats);
+router.get("/top-consultants", protect, adminProtect, getTopConsultants);
+router.get("/top-services", protect, adminProtect, getTopServices);
+router.get("/top-categories", protect, adminProtect, getTopCategories);
+
+
+
 router.post('/categories', protect, createCategory);
 router.get('/categories', protect, getCategories);
 router.put('/categories/:id', protect, updateCategory);

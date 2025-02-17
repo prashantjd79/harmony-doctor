@@ -5,7 +5,9 @@ const Doctor = require('../models/doctorModel');
 const Service = require('../models/serviceModel');
 const PromoCode = require("../models/promoCodeModel");
 const Patient = require("../models/patientModel");
-
+const Blog = require('../models/blogModels');
+const Article = require('../models/articleModel');
+const YoutubeBlog = require('../models/youtubeBlogModel.js');
 
 
 
@@ -548,6 +550,173 @@ const assignToManager = asyncHandler(async (req, res) => {
         manager,
     });
 });
+const getAdminStats = asyncHandler(async (req, res) => {
+    // Fetch numbers dynamically from the database
+    const totalAppointments = await Session.countDocuments({});
+    const certifiedDoctors = await Doctor.countDocuments({ isApproved: true });
+    const registeredUsers = await Patient.countDocuments({});
+    const totalBlogs = await Blog.countDocuments({});
+    const totalEarnings = await Session.aggregate([{ $group: { _id: null, total: { $sum: "$paymentDetails.amount" } } }]);
+    const earningsThisMonth = await Session.aggregate([
+        {
+            $match: {
+                date: { $gte: new Date(new Date().setDate(1)) } // Earnings from the start of the month
+            }
+        },
+        { $group: { _id: null, total: { $sum: "$paymentDetails.amount" } } }
+    ]);
+
+    const activeDoctors = await Doctor.countDocuments({ isApproved: true, isDisabled: false });
+    const pendingDoctors = await Doctor.countDocuments({ isApproved: false });
+    const totalDoctors = await Doctor.countDocuments({});
+    const totalServices = await Service.countDocuments({});
+    const totalCategories = await Category.countDocuments({});
+    const temporarilyOffDoctors = await Doctor.countDocuments({ isDisabled: true });
+    const inactiveDoctors = await Doctor.countDocuments({ isActive: false });
+
+    const totalYtContent = await YoutubeBlog.countDocuments({});
+    const pendingYtContent = await YoutubeBlog.countDocuments({ isApproved: false });
+    const totalArticles = await Article.countDocuments({});
+    const pendingArticles = await Article.countDocuments({ isApproved: false });
+    const pendingBlogs = await Blog.countDocuments({ isApproved: false });
+
+    const rejectedArticles = await Article.countDocuments({ isRejected: true });
+    const publishBlogs = await Blog.countDocuments({ isApproved: true });
+    const unpublishBlogs = await Blog.countDocuments({ isPublished: false });
+    const rejectedBlogs = await Blog.countDocuments({ isRejected: true });
+    const improveBlogs = await Blog.countDocuments({ needsImprovement: true });
+
+    const publishArticles = await Article.countDocuments({ isApproved: true });
+    const unpublishArticles = await Article.countDocuments({ isPublished: false });
+    const improveArticles = await Article.countDocuments({ needsImprovement: true });
+
+    const publishYtContent = await YoutubeBlog.countDocuments({ isApproved: true });
+    const unpublishYtContent = await YoutubeBlog.countDocuments({ isPublished: false });
+    const improveYtContent = await YoutubeBlog.countDocuments({ needsImprovement: true });
+    const rejectedYtContent = await YoutubeBlog.countDocuments({ isRejected: true });
+
+    const totalCreators = await Creator.countDocuments({});
+    const activeCreators = await Creator.countDocuments({ isApproved: true });
+    const inactiveCreators = await Creator.countDocuments({ isActive: false });
+    const temporarilyOffCreators = await Creator.countDocuments({ isDisabled: true });
+
+    const totalManagers = await Manager.countDocuments({});
+    const activeManagers = await Manager.countDocuments({ isApproved: true });
+    const inactiveManagers = await Manager.countDocuments({ isActive: false });
+    const temporarilyOffManagers = await Manager.countDocuments({ isDisabled: true });
+
+    res.status(200).json({
+        appointments: { number: totalAppointments, name: "Total Appointments" },
+        certifiedDoctors: { number: certifiedDoctors, name: "Certified Doctors" },
+        registeredUser: { number: registeredUsers, name: "Registered Users" },
+        totalBlogs: { number: totalBlogs, name: "Total Blogs" },
+        earningTillNow: { number: totalEarnings.length > 0 ? totalEarnings[0].total : 0, name: "Total Earnings" },
+        earningThisMonth: { number: earningsThisMonth.length > 0 ? earningsThisMonth[0].total : 0, name: "Earnings This Month" },
+        activeDoctors: { number: activeDoctors, name: "Active Doctors" },
+        pendingDoctors: { number: pendingDoctors, name: "Pending Doctors" },
+        totalDoctors: { number: totalDoctors, name: "Total Doctors" },
+        totalServices: { number: totalServices, name: "Total Services" },
+        totalCategories: { number: totalCategories, name: "Total Categories" },
+        temporarilyOffDoctors: { number: temporarilyOffDoctors, name: "Temporarily Off Doctors" },
+        inactiveDoctors: { number: inactiveDoctors, name: "Inactive Doctors" },
+        totalYtContent: { number: totalYtContent, name: "Total YouTube Content" },
+        pendingYtContent: { number: pendingYtContent, name: "Pending YouTube Content" },
+        totalArticles: { number: totalArticles, name: "Total Articles" },
+        pendingArticles: { number: pendingArticles, name: "Pending Articles" },
+        pendingBlogs: { number: pendingBlogs, name: "Pending Blogs" },
+        rejectedArticles: { number: rejectedArticles, name: "Rejected Articles" },
+        publishBlogs: { number: publishBlogs, name: "Published Blogs" },
+        unpublishBlogs: { number: unpublishBlogs, name: "Unpublished Blogs" },
+        rejectedBlogs: { number: rejectedBlogs, name: "Rejected Blogs" },
+        improveBlogs: { number: improveBlogs, name: "Blogs Needing Improvement" },
+        publishArticles: { number: publishArticles, name: "Published Articles" },
+        unpublishArticles: { number: unpublishArticles, name: "Unpublished Articles" },
+        improveArticles: { number: improveArticles, name: "Articles Needing Improvement" },
+        publishYtContent: { number: publishYtContent, name: "Published YouTube Content" },
+        unpublishYtContent: { number: unpublishYtContent, name: "Unpublished YouTube Content" },
+        improveYtContent: { number: improveYtContent, name: "YouTube Content Needing Improvement" },
+        rejectedYtContent: { number: rejectedYtContent, name: "Rejected YouTube Content" },
+        totalCreators: { number: totalCreators, name: "Total Creators" },
+        activeCreators: { number: activeCreators, name: "Active Creators" },
+        inactiveCreators: { number: inactiveCreators, name: "Inactive Creators" },
+        temporarilyOffCreators: { number: temporarilyOffCreators, name: "Temporarily Off Creators" },
+        totalManagers: { number: totalManagers, name: "Total Managers" },
+        activeManagers: { number: activeManagers, name: "Active Managers" },
+        inactiveManagers: { number: inactiveManagers, name: "Inactive Managers" },
+        temporarilyOffManagers: { number: temporarilyOffManagers, name: "Temporarily Off Managers" }
+    });
+});
+const getTopConsultants = asyncHandler(async (req, res) => {
+    const consultants = await Session.aggregate([
+        { $match: { status: "Completed" } }, // Filter only completed sessions
+        {
+            $group: {
+                _id: "$doctor",
+                totalSessions: { $sum: 1 } // Count completed sessions per doctor
+            }
+        },
+        { $sort: { totalSessions: -1 } }, // Sort by highest session count
+        { $limit: 5 } // Get only top 5 consultants
+    ]);
+
+    if (!consultants.length) {
+        return res.status(404).json({ message: "No consultants found" });
+    }
+
+    // Fetch doctor details
+    const topConsultants = await Doctor.find({ _id: { $in: consultants.map(c => c._id) } })
+        .select("name specialization experience profilePicture")
+        .limit(5);
+
+    res.status(200).json(topConsultants);
+});
+
+
+const getTopServices = asyncHandler(async (req, res) => {
+    const topServices = await Session.aggregate([
+        { $match: { status: "Completed" } },
+        {
+            $group: {
+                _id: "$service",
+                totalBookings: { $sum: 1 }
+            }
+        },
+        { $sort: { totalBookings: -1 } },
+        { $limit: 5 }
+    ]);
+
+    const services = await Service.find({ _id: { $in: topServices.map(s => s._id) } })
+        .select("name category price");
+
+    res.status(200).json(services);
+});
+const getTopCategories = asyncHandler(async (req, res) => {
+    const topCategories = await Session.aggregate([
+        { $match: { status: "Completed" } },
+        {
+            $lookup: {
+                from: "services",
+                localField: "service",
+                foreignField: "_id",
+                as: "serviceDetails"
+            }
+        },
+        { $unwind: "$serviceDetails" },
+        {
+            $group: {
+                _id: "$serviceDetails.category",
+                totalBookings: { $sum: 1 }
+            }
+        },
+        { $sort: { totalBookings: -1 } },
+        { $limit: 5 }
+    ]);
+
+    const categories = await Category.find({ _id: { $in: topCategories.map(c => c._id) } })
+        .select("name description icon");
+
+    res.status(200).json(categories);
+});
 
 module.exports = {
     createCategory,
@@ -563,7 +732,7 @@ module.exports = {
     approveDoctor,
     approveCreator,
     approveManager,assignToManager,
-    getServiceById,getManagers,getCreators,
+    getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,
     
  createPromoCode, getAllPromoCodes,  deletePromoCode,
 

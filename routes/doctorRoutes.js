@@ -84,10 +84,18 @@ const {
     enrollPricing, 
     updateAvailability, 
     
+    updateDoctorProfile,
+    getServiceById,
+    getManagerDetails,
+    getPatientDetails,
+    getCompletedSessions,
+    getServicesEnrolled,
+    
      
 } = require('../controllers/doctorController');
 const { getDoctorSessions, } = require('../controllers/doctorController');
 const { protect, doctorProtect } = require('../middleware/authMiddleware');
+const { getDoctorProfile, } = require('../controllers/doctorController');
 
 // 🔐 Authentication
 router.post('/signup', doctorSignup);
@@ -110,5 +118,13 @@ router.put('/availability', protect, doctorProtect, updateAvailability);
 
 // 🩺 Patient Profile
 router.get('/patients/:patientId/profile', protect, doctorProtect, viewPatientProfile);
+
+router.get('/profile', protect, doctorProtect, getDoctorProfile);
+router.put('/profile', protect, doctorProtect, updateDoctorProfile);
+router.get('/services/:serviceId', protect, doctorProtect, getServiceById);
+router.get('/manager/:managerId', protect, doctorProtect, getManagerDetails);
+router.get('/patients/:patientId', protect, doctorProtect, getPatientDetails);
+router.get('/stats/completed-sessions', protect, doctorProtect, getCompletedSessions);
+router.get('/stats/services-enrolled', protect, doctorProtect, getServicesEnrolled);
 
 module.exports = router;

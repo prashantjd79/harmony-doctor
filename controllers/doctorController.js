@@ -1,5 +1,5 @@
 
-
+const Manager = require('../models/managerModel');
 
 const Category = require('../models/categoryModel');
 const asyncHandler = require('express-async-handler');
@@ -196,9 +196,86 @@ const getDoctorSessions = asyncHandler(async (req, res) => {
 });
 
 
+const getDoctorProfile = asyncHandler(async (req, res) => {
+    const doctor = await Doctor.findById(req.user._id).select('-password'); // Exclude password
 
+    if (!doctor) {
+        res.status(404);
+        throw new Error("Doctor not found");
+    }
 
+    res.status(200).json(doctor);
+});
 
+const updateDoctorProfile = asyncHandler(async (req, res) => {
+    const doctor = await Doctor.findById(req.user._id);
+
+    if (!doctor) {
+        res.status(404);
+        throw new Error("Doctor not found");
+    }
+
+    // Update only the fields that are provided
+    doctor.name = req.body.name || doctor.name;
+    doctor.email = req.body.email || doctor.email;
+    doctor.specialization = req.body.specialization || doctor.specialization;
+    doctor.experience = req.body.experience || doctor.experience;
+    doctor.profilePicture = req.body.profilePicture || doctor.profilePicture;
+    doctor.availability = req.body.availability || doctor.availability;
+
+    const updatedDoctor = await doctor.save();
+    res.status(200).json(updatedDoctor);
+});
+
+const getServiceById = asyncHandler(async (req, res) => {
+    const service = await Service.findById(req.params.serviceId);
+
+    if (!service) {
+        res.status(404);
+        throw new Error("Service not found");
+    }
+
+    res.status(200).json(service);
+});
+const getManagerDetails = asyncHandler(async (req, res) => {
+    const manager = await Manager.findById(req.params.managerId).select('-password');
+
+    if (!manager) {
+        res.status(404);
+        throw new Error("Manager not found");
+    }
+
+    res.status(200).json(manager);
+});
+
+const getPatientDetails = asyncHandler(async (req, res) => {
+    const patient = await Patient.findById(req.params.patientId).select('-password');
+
+    if (!patient) {
+        res.status(404);
+        throw new Error("Patient not found");
+    }
+
+    // Fetch past sessions with this patient
+    const sessionHistory = await Session.find({ patient: req.params.patientId, doctor: req.user._id })
+        .populate('service', 'name price')
+        .sort({ date: -1 });
+
+    res.status(200).json({ patient, sessionHistory });
+});
+const getCompletedSessions = asyncHandler(async (req, res) => {
+    const completedSessionsCount = await Session.countDocuments({
+        doctor: req.user._id,
+        status: "Completed",
+    });
+
+    res.status(200).json({ completedSessions: completedSessionsCount });
+});
+const getServicesEnrolled = asyncHandler(async (req, res) => {
+    const doctorServices = await Service.find({ "doctorPricing.doctor": req.user._id });
+
+    res.status(200).json({ servicesEnrolled: doctorServices.length });
+});
 
 module.exports = { 
     getCategories, 
@@ -208,5 +285,7 @@ module.exports = {
     enrollPricing, 
     updateAvailability, 
     getDoctorSessions,
-    
+    getDoctorProfile,
+    updateDoctorProfile,
+    getServiceById,getManagerDetails,getPatientDetails,getCompletedSessions,getServicesEnrolled
 };

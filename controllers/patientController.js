@@ -9,9 +9,9 @@ const Doctor = require('../models/doctorModel');
 const sendEmail = require("../utils/email"); // Import sendEmail utility function
 const Category = require("../models/categoryModel");
 const MoodContinuum = require("../models/moodContinuumModel");
-
-
-
+const Blog = require('../models/blogModels');
+const Article = require('../models/articleModel');
+const YoutubeBlog = require('../models/youtubeBlogModel.js');
 const PromoCode = require("../models/promoCodeModel");
 
 
@@ -629,35 +629,35 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 // Patient Login
-const loginPatient = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+// const loginPatient = asyncHandler(async (req, res) => {
+//     const { email, password } = req.body;
 
-    if (!email || !password) {
-        res.status(400);
-        throw new Error('Email and Password are required');
-    }
+//     if (!email || !password) {
+//         res.status(400);
+//         throw new Error('Email and Password are required');
+//     }
 
-    const patient = await Patient.findOne({ email });
-    if (!patient) {
-        res.status(404);
-        throw new Error('Invalid email or password');
-    }
+//     const patient = await Patient.findOne({ email });
+//     if (!patient) {
+//         res.status(404);
+//         throw new Error('Invalid email or password');
+//     }
 
-    if (!patient.isEmailVerified) {
-        res.status(401);
-        throw new Error('Email not verified. Please verify your email before logging in.');
-    }
+//     if (!patient.isEmailVerified) {
+//         res.status(401);
+//         throw new Error('Email not verified. Please verify your email before logging in.');
+//     }
 
-    const isPasswordMatch = await bcrypt.compare(password, patient.password);
-    if (!isPasswordMatch) {
-        res.status(401);
-        throw new Error('Invalid email or password');
-    }
+//     const isPasswordMatch = await bcrypt.compare(password, patient.password);
+//     if (!isPasswordMatch) {
+//         res.status(401);
+//         throw new Error('Invalid email or password');
+//     }
 
-    const token = jwt.sign({ id: patient._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+//     const token = jwt.sign({ id: patient._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    res.status(200).json({ message: 'Login successful', token });
-});
+//     res.status(200).json({ message: 'Login successful', token });
+// });
 
 
 
@@ -1257,11 +1257,128 @@ const getPatientPromoCodes = asyncHandler(async (req, res) => {
     }
 });
 
+const getPatientProfile = asyncHandler(async (req, res) => {
+    const patient = await Patient.findById(req.user._id).select('-password');
+
+    if (!patient) {
+        res.status(404);
+        throw new Error("Patient not found");
+    }
+
+    res.status(200).json(patient);
+});
+const updatePatientProfile = asyncHandler(async (req, res) => {
+    const patient = await Patient.findById(req.user._id);
+
+    if (!patient) {
+        res.status(404);
+        throw new Error("Patient not found");
+    }
+
+    patient.name = req.body.name || patient.name;
+    patient.email = req.body.email || patient.email;
+    patient.contactNumber = req.body.contactNumber || patient.contactNumber;
+    patient.birthday = req.body.birthday || patient.birthday;
+    patient.gender = req.body.gender || patient.gender;
+    patient.age = req.body.age || patient.age;
+    patient.address = req.body.address || patient.address;
+
+    const updatedPatient = await patient.save();
+    res.status(200).json(updatedPatient);
+});
+const getCategories = asyncHandler(async (req, res) => {
+    const categories = await Category.find({});
+    
+    if (!categories.length) {
+        res.status(404);
+        throw new Error("No categories found");
+    }
+
+    res.status(200).json(categories);
+});
+const getBlogs = asyncHandler(async (req, res) => {
+    const blogs = await Blog.find({ isApproved: true }).sort({ createdAt: -1 });
+
+    if (!blogs.length) {
+        res.status(404);
+        throw new Error("No blogs found");
+    }
+
+    res.status(200).json(blogs);
+});
+const getYoutubeBlogs = asyncHandler(async (req, res) => {
+    const youtubeBlogs = await YoutubeBlog.find({ isApproved: true }).sort({ createdAt: -1 });
+
+    if (!youtubeBlogs.length) {
+        res.status(404);
+        throw new Error("No YouTube blogs found");
+    }
+
+    res.status(200).json(youtubeBlogs);
+});
+const getArticles = asyncHandler(async (req, res) => {
+    const articles = await Article.find({ isApproved: true }).sort({ createdAt: -1 });
+
+    if (!articles.length) {
+        res.status(404);
+        throw new Error("No articles found");
+    }
+
+    res.status(200).json(articles);
+});
+const getTopConsultants = asyncHandler(async (req, res) => {
+    const topConsultants = await Doctor.find({ isApproved: true })
+        .sort({ experience: -1 }) // Sorting by highest experience
+        .limit(5) // Get top 5
+        .select("name specialization experience profilePicture");
+
+    res.status(200).json(topConsultants);
+});
+const getCompletedMeetings = asyncHandler(async (req, res) => {
+    const completedMeetings = await Session.countDocuments({
+        patient: req.user._id,
+        status: "Completed",
+    });
+
+    res.status(200).json({ completedMeetings });
+});
+
+const loginPatient = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const patient = await Patient.findOne({ email });
+
+    if (patient && (await bcrypt.compare(password, patient.password))) {
+        if (!patient.isEmailVerified) {
+            res.status(401);
+            throw new Error("Email not verified. Please verify before logging in.");
+        }
+        const jwt = require("jsonwebtoken");
+
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+};
+
+
+        res.status(200).json({
+            _id: patient._id,
+            name: patient.name,
+            email: patient.email,
+            contactNumber: patient.contactNumber,
+            gender: patient.gender,
+            age: patient.age,
+            address: patient.address,
+            token: generateToken(patient._id),
+        });
+    } else {
+        res.status(401);
+        throw new Error("Invalid email or password");
+    }
+});
 
 
 
 
 
-module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,
+module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,getPatientProfile,updatePatientProfile,getCategories,getBlogs,getYoutubeBlogs,getArticles,getTopConsultants,getCompletedMeetings,
     viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getPatientPromoCodes};
 

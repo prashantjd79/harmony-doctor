@@ -69,13 +69,25 @@ const {
     getAllDoctors,
     getDoctorById,
     getPatientSessionHistory,
-    getUpcomingSessions
+    getUpcomingSessions,getPatientProfile,updatePatientProfile,getCategories,getBlogs,getYoutubeBlogs,getArticles,getTopConsultants,getCompletedMeetings
     
 } = require("../controllers/patientController");
 
 
 
 const { markDoctorAbsent } = require("../controllers/sessionController");
+
+router.get('/profile', protect, patientProtect, getPatientProfile);
+router.put('/profile', protect, patientProtect, updatePatientProfile);
+router.get('/categories', getCategories);
+router.get('/blogs', getBlogs);
+router.get('/youtube-blogs', getYoutubeBlogs);
+router.get('/articles', getArticles);
+router.get('/consultants/top', getTopConsultants);
+router.get('/stats/completed-meetings', protect, patientProtect, getCompletedMeetings);
+
+
+
 // ✅ Patient Authentication & Signup
 router.put("/sessions/mark-absent", protect, markDoctorAbsent);
 router.post("/signup", signupPatient);
@@ -122,5 +134,7 @@ router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
 
 router.post("/apply-promo-code", protect, patientProtect, applyPromoCode);
 router.get("/promo-codes/:patientId", protect, patientProtect, getPatientPromoCodes);
+
+
 
 module.exports = router;
