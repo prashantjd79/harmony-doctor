@@ -237,16 +237,19 @@ const getServiceById = asyncHandler(async (req, res) => {
 
     res.status(200).json(service);
 });
-const getManagerDetails = asyncHandler(async (req, res) => {
-    const manager = await Manager.findById(req.params.managerId).select('-password');
+const getAssignedManager = asyncHandler(async (req, res) => {
+    const doctorId = req.user._id; // Get logged-in doctor ID
+
+    // Find manager assigned to the doctor
+    const manager = await Manager.findOne({ assignedDoctors: doctorId }).select('-password');
 
     if (!manager) {
-        res.status(404);
-        throw new Error("Manager not found");
+        return res.status(404).json({ message: "No manager assigned to this doctor" });
     }
 
     res.status(200).json(manager);
 });
+
 
 const getPatientDetails = asyncHandler(async (req, res) => {
     const patient = await Patient.findById(req.params.patientId).select('-password');
@@ -287,5 +290,5 @@ module.exports = {
     getDoctorSessions,
     getDoctorProfile,
     updateDoctorProfile,
-    getServiceById,getManagerDetails,getPatientDetails,getCompletedSessions,getServicesEnrolled
+    getServiceById,getAssignedManager,getPatientDetails,getCompletedSessions,getServicesEnrolled
 };

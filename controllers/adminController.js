@@ -8,13 +8,9 @@ const Patient = require("../models/patientModel");
 const Blog = require('../models/blogModels');
 const Article = require('../models/articleModel');
 const YoutubeBlog = require('../models/youtubeBlogModel.js');
+const Manager = require('../models/managerModel');
+const Creator = require('../models/creatorModel');
 
-
-
-
-
-
-// ✅ Create a Promo Code (Either for Transactions or Mental Health)
 const createPromoCode = asyncHandler(async (req, res) => {
     const { code, discountPercentage, validTill, applicableTransactions, specialForMentalHealth } = req.body;
 
@@ -45,10 +41,6 @@ const createPromoCode = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-
-
 const getAllPromoCodes = asyncHandler(async (req, res) => {
     try {
         const promoCodes = await PromoCode.find().sort({ createdAt: -1 });
@@ -66,14 +58,6 @@ const getAllPromoCodes = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-
-
-
-
-
-// ✅ Delete Promo Code (Admin)
 const deletePromoCode = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -98,84 +82,6 @@ const deletePromoCode = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-
-
-
-
-// Ensure the path is correct
- // Ensure the path is correct
-
-
- // Make sure this path is correct
-
-
-
-
-// const createService = asyncHandler(async (req, res) => {
-//     const { name, description, category, duration, price, doctorPricing } = req.body;
-
-//     // Validate required fields
-//     if (!name || !description || !category || !duration || !price) {
-//         res.status(400);
-//         throw new Error('All required fields (name, description, category, duration, price) must be filled');
-//     }
-
-//     // Check if the category exists
-//     const categoryExists = await Category.findById(category);
-//     if (!categoryExists) {
-//         res.status(404);
-//         throw new Error('Category does not exist');
-//     }
-
-//     // Check if a service with the same name already exists
-//     const serviceExists = await Service.findOne({ name });
-//     if (serviceExists) {
-//         res.status(400);
-//         throw new Error('Service already exists');
-//     }
-
-//     // Validate doctorPricing
-//     let validatedDoctorPricing = [];
-//     if (doctorPricing && doctorPricing.length > 0) {
-//         for (const pricing of doctorPricing) {
-//             const doctorExists = await Doctor.findById(pricing.doctor);
-//             if (!doctorExists) {
-//                 res.status(404);
-//                 throw new Error(`Doctor with ID ${pricing.doctor} not found`);
-//             }
-//             validatedDoctorPricing.push({
-//                 doctor: pricing.doctor,
-//                 fee: pricing.fee,
-//             });
-//         }
-//     }
-
-//     // Create the service
-//     const service = await Service.create({
-//         name,
-//         description,
-//         category,
-//         duration,
-//         price,
-//         doctorPricing: validatedDoctorPricing,
-//     });
-
-//     // Respond with the complete service details
-//     res.status(201).json({
-//         message: 'Service created successfully',
-//         service: {
-//             id: service._id,
-//             name: service.name,
-//             description: service.description,
-//             category: service.category,
-//             duration: service.duration,
-//             price: service.price,
-//             doctorPricing: service.doctorPricing,
-//         },
-//     });
-// });
 const createService = asyncHandler(async (req, res) => {
     const {
         name,
@@ -262,20 +168,11 @@ const createService = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-
-
-
-
-// Get All Services
 const getServices = asyncHandler(async (req, res) => {
     const services = await Service.find({}).populate('category', 'name');
     res.status(200).json(services);
 });
 
-
-// Get Service by ID
 const getServiceById = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
 
@@ -287,7 +184,6 @@ const getServiceById = asyncHandler(async (req, res) => {
 
     res.status(200).json(service);
 });
-
 
 const getManagers = asyncHandler(async (req, res) => {
     try {
@@ -307,9 +203,6 @@ const getCreators = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-// Update Service
 const updateService = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { name, description, category, duration, price } = req.body;
@@ -339,7 +232,6 @@ const updateService = asyncHandler(async (req, res) => {
     res.status(200).json(updatedService);
 });
 
-// Delete Service
 const deleteService = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -354,30 +246,6 @@ const deleteService = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'Service deleted successfully' });
 });
-
-
-
-// Create Category
-// const createCategory = asyncHandler(async (req, res) => {
-//     const { name, description } = req.body;
-
-//     if (!name) {
-//         res.status(400);
-//         throw new Error('Category name is required');
-//     }
-
-//     const categoryExists = await Category.findOne({ name });
-
-//     if (categoryExists) {
-//         res.status(400);
-//         throw new Error('Category already exists');
-//     }
-
-//     const category = await Category.create({ name, description });
-
-//     res.status(201).json(category);
-// });
-
 
 const createCategory = asyncHandler(async (req, res) => {
     const { name, description, icon } = req.body;
@@ -402,16 +270,11 @@ const createCategory = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-
-// Get All Categories
 const getCategories = asyncHandler(async (req, res) => {
     const categories = await Category.find({});
     res.status(200).json(categories);
 });
 
-// Update Category
 const updateCategory = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { name, description } = req.body;
@@ -431,7 +294,6 @@ const updateCategory = asyncHandler(async (req, res) => {
     res.status(200).json(updatedCategory);
 });
 
-// Delete Category
 const deleteCategory = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -447,8 +309,6 @@ const deleteCategory = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Category deleted successfully' });
 });
 
-
-// View All Session Histories
 const viewSessionHistories = asyncHandler(async (req, res) => {
     const sessions = await Session.find({})
         .populate('patient', 'name email') // Adjust fields based on your User model
@@ -462,6 +322,7 @@ const viewSessionHistories = asyncHandler(async (req, res) => {
 
     res.status(200).json(sessions);
 });
+
 const viewDoctorProfiles = asyncHandler(async (req, res) => {
     const doctors = await Doctor.find({});
     if (!doctors || doctors.length === 0) {
@@ -471,7 +332,7 @@ const viewDoctorProfiles = asyncHandler(async (req, res) => {
 
     res.status(200).json(doctors);
 });
-// Approve a Doctor Profile
+
 const approveDoctor = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -491,10 +352,6 @@ const approveDoctor = asyncHandler(async (req, res) => {
     });
 });
 
-const Manager = require('../models/managerModel');
-const Creator = require('../models/creatorModel');
-
-// Approve Manager
 const approveManager = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const manager = await Manager.findById(id);
@@ -510,7 +367,6 @@ const approveManager = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Manager approved successfully' });
 });
 
-// Approve Creator
 const approveCreator = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const creator = await Creator.findById(id);
@@ -525,6 +381,7 @@ const approveCreator = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'Creator approved successfully' });
 });
+
 const assignToManager = asyncHandler(async (req, res) => {
     const { managerId, doctorIds, creatorIds } = req.body;
 
@@ -550,6 +407,7 @@ const assignToManager = asyncHandler(async (req, res) => {
         manager,
     });
 });
+
 const getAdminStats = asyncHandler(async (req, res) => {
     // Fetch numbers dynamically from the database
     const totalAppointments = await Session.countDocuments({});
@@ -646,6 +504,7 @@ const getAdminStats = asyncHandler(async (req, res) => {
         temporarilyOffManagers: { number: temporarilyOffManagers, name: "Temporarily Off Managers" }
     });
 });
+
 const getTopConsultants = asyncHandler(async (req, res) => {
     const consultants = await Session.aggregate([
         { $match: { status: "Completed" } }, // Filter only completed sessions
@@ -671,7 +530,6 @@ const getTopConsultants = asyncHandler(async (req, res) => {
     res.status(200).json(topConsultants);
 });
 
-
 const getTopServices = asyncHandler(async (req, res) => {
     const topServices = await Session.aggregate([
         { $match: { status: "Completed" } },
@@ -690,6 +548,7 @@ const getTopServices = asyncHandler(async (req, res) => {
 
     res.status(200).json(services);
 });
+
 const getTopCategories = asyncHandler(async (req, res) => {
     const topCategories = await Session.aggregate([
         { $match: { status: "Completed" } },
@@ -717,6 +576,7 @@ const getTopCategories = asyncHandler(async (req, res) => {
 
     res.status(200).json(categories);
 });
+
 const getAllReviews = asyncHandler(async (req, res) => {
     const reviews = await Session.aggregate([
         { $match: { status: "Completed", reviews: { $exists: true, $ne: [] } } }, // Only completed sessions with reviews

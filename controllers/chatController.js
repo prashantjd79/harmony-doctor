@@ -2,7 +2,6 @@ const asyncHandler = require('express-async-handler');
 const Chat = require('../models/chatModel');
 const Session = require('../models/sessionModel');
 
-// ✅ Create or Get Chat for a Session
 const getChat = asyncHandler(async (req, res) => {
     const { sessionId } = req.params;
     
@@ -87,9 +86,6 @@ const sendMessage = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-// ✅ End Chat after Meeting Ends
 const closeChat = asyncHandler(async (req, res) => {
     const { sessionId } = req.params;
 
@@ -110,9 +106,5 @@ const closeChat = asyncHandler(async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-
-
-
 
 module.exports = { getChat, sendMessage, closeChat};

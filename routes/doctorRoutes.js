@@ -86,7 +86,7 @@ const {
     
     updateDoctorProfile,
     getServiceById,
-    getManagerDetails,
+    getAssignedManager,
     getPatientDetails,
     getCompletedSessions,
     getServicesEnrolled,
@@ -122,7 +122,8 @@ router.get('/patients/:patientId/profile', protect, doctorProtect, viewPatientPr
 router.get('/profile', protect, doctorProtect, getDoctorProfile);
 router.put('/profile', protect, doctorProtect, updateDoctorProfile);
 router.get('/services/:serviceId', protect, doctorProtect, getServiceById);
-router.get('/manager/:managerId', protect, doctorProtect, getManagerDetails);
+router.get('/assigned-manager', protect, doctorProtect, getAssignedManager);
+
 router.get('/patients/:patientId', protect, doctorProtect, getPatientDetails);
 router.get('/stats/completed-sessions', protect, doctorProtect, getCompletedSessions);
 router.get('/stats/services-enrolled', protect, doctorProtect, getServicesEnrolled);

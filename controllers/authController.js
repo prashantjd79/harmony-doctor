@@ -2,12 +2,10 @@ const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const Admin = require('../models/adminModel');
 
-// Generate JWT Token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
 
-// Admin Signup (No Token Generated)
 const adminSignup = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -34,7 +32,6 @@ const adminSignup = asyncHandler(async (req, res) => {
     }
 });
 
-// Admin Login (Token Generated)
 const adminLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 

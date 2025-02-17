@@ -1,26 +1,13 @@
 const asyncHandler = require('express-async-handler');
 const Creator = require('../models/creatorModel');
 const mongoose = require('mongoose');
-// Creator Signup
 const Blog = require('../models/blogModels');
-
 const YoutubeBlog = require('../models/youtubeBlogModel.js');
-
-
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-
-
 const Article = require('../models/articleModel');
 const { required } = require('joi');
-// const YouTubeBlog = require('../models/youtubeBlogModel');
-// const Blog = require('../models/blogModel');
 
-// ==========================
-// Article CRUD Operations
-// ==========================
-
-// Create Article
 const createArticle = asyncHandler(async (req, res) => {
     const { heading, content, categories, tags, description } = req.body;
     let parsedCategories = [];
@@ -61,9 +48,6 @@ const createArticle = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-// Get All Articles
 const getArticles = asyncHandler(async (req, res) => {
     const articles = await Article.find({ creator: req.user._id }) // Only creator's articles
         .populate('categories')
@@ -71,7 +55,6 @@ const getArticles = asyncHandler(async (req, res) => {
     res.status(200).json(articles);
 });
 
-// Get Article by ID
 const getArticleById = asyncHandler(async (req, res) => {
     const article = await Article.findOne({ _id: req.params.id, creator: req.user._id }) // Ensure ownership
         .populate('categories')
@@ -172,10 +155,6 @@ const updateArticle = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-
-// Delete Article
 const deleteArticle = asyncHandler(async (req, res) => {
     const article = await Article.findOne({ _id: req.params.id, creator: req.user._id }); // Ensure ownership
     if (!article) {
@@ -186,9 +165,6 @@ const deleteArticle = asyncHandler(async (req, res) => {
     await article.remove();
     res.status(200).json({ message: 'Article deleted successfully' });
 });
-
-// ===========================
-// Export Article Functions
 
 const createBlog = asyncHandler(async (req, res) => {
     const { heading, content, categories, tags, description } = req.body;
@@ -252,7 +228,6 @@ const createBlog = asyncHandler(async (req, res) => {
     });
 });
 
-
 const updateBlog = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { heading, content, categories, tags, description } = req.body;
@@ -312,6 +287,7 @@ const updateBlog = asyncHandler(async (req, res) => {
         blog: updatedBlog,
     });
 });
+
 const getBlogById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -338,29 +314,6 @@ const getBlogById = asyncHandler(async (req, res) => {
     res.status(200).json(blog);
 });
 
-
-
-// const deleteBlog = asyncHandler(async (req, res) => {
-//     const { id } = req.params;
-
-//     console.log('Request Params (ID):', id);
-
-//     const blog = await Blog.findById(id);
-//     if (!blog) {
-//         res.status(404);
-//         throw new Error('Blog not found');
-//     }
-
-//     await blog.remove();
-
-//     res.status(200).json({
-//         message: 'Blog deleted successfully',
-//     });
-// });
-
-
-
-// Creator Login
 const creatorLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
@@ -384,14 +337,9 @@ const creatorLogin = asyncHandler(async (req, res) => {
     }
 });
 
-// Generate JWT Token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
-
-
-
-
 
 const creatorSignup = asyncHandler(async (req, res) => {
     const { name, email, password, contactNumber, country, state, profilePicture, description } = req.body;
@@ -425,7 +373,6 @@ const creatorSignup = asyncHandler(async (req, res) => {
         throw new Error('Invalid creator data');
     }
 });
-
 
 const createYoutubeBlog = asyncHandler(async (req, res) => {
     const { heading, iframeCode, content, categories, tags, description } = req.body;
@@ -468,10 +415,6 @@ const createYoutubeBlog = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-
-
 const updateYoutubeBlog = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { heading, iframeCode, content, categories, tags, description } = req.body;
@@ -507,16 +450,6 @@ const updateYoutubeBlog = asyncHandler(async (req, res) => {
     });
 });
 
-
-
-
-
-
-
-
-
-
-
 const getYoutubeBlogById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -551,8 +484,6 @@ const deleteYoutubeBlog = asyncHandler(async (req, res) => {
     });
 });
 
-
-// ✅ Get All Blogs
 const getAllBlogs = asyncHandler(async (req, res) => {
     try {
         const blogs = await Blog.find().sort({ createdAt: -1 }); // Fetch all blogs sorted by latest
@@ -570,16 +501,6 @@ const getAllBlogs = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-
-
-
-
-
-
-
-// ✅ Delete a Blog by ID
 const deleteBlog = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -616,22 +537,6 @@ const deleteBlog = asyncHandler(async (req, res) => {
         res.status(500).json({ message: "Error deleting blog", error: error.message });
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const getAllYouTubeBlogs = asyncHandler(async (req, res) => {
     try {
