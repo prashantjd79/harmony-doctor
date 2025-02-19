@@ -679,11 +679,11 @@ const addJournalEntry = asyncHandler(async (req, res) => {
         throw new Error('Patient not found');
     }
 
-    // Add journal entry
+    // Add journal entry with createdAt field
     const journalEntry = {
         title,
         description,
-        date: new Date(),
+        createdAt: new Date(),
     };
 
     if (!patient.journals) patient.journals = []; // Initialize if undefined
@@ -692,7 +692,11 @@ const addJournalEntry = asyncHandler(async (req, res) => {
 
     res.status(201).json({
         message: 'Journal entry added successfully',
-        journalEntry,
+        journalEntry: {
+            title: journalEntry.title,
+            description: journalEntry.description,
+            createdAt: journalEntry.createdAt, // Now included in the response
+        },
     });
 });
 
@@ -1354,35 +1358,92 @@ const getCategories = asyncHandler(async (req, res) => {
     res.status(200).json(categories);
 });
 const getBlogs = asyncHandler(async (req, res) => {
-    const blogs = await Blog.find({ isApproved: true }).sort({ createdAt: -1 });
+    const blogs = await Blog.find({ isApproved: true })
+        .populate("categories", "_id name") // Populating category ID and name
+        .sort({ createdAt: -1 });
 
     if (!blogs.length) {
         res.status(404);
         throw new Error("No blogs found");
     }
 
-    res.status(200).json(blogs);
+    res.status(200).json(
+        blogs.map(blog => ({
+            _id: blog._id,
+            heading: blog.heading,
+            content: blog.content,
+            categories: blog.categories.map(category => ({
+                _id: category._id,
+                name: category.name
+            })),
+            tags: blog.tags,
+            description: blog.description,
+            bannerImage: blog.bannerImage,
+            creator: blog.creator,
+            isApproved: blog.isApproved,
+            createdAt: blog.createdAt
+        }))
+    );
 });
+
 const getYoutubeBlogs = asyncHandler(async (req, res) => {
-    const youtubeBlogs = await YoutubeBlog.find({ isApproved: true }).sort({ createdAt: -1 });
+    const youtubeBlogs = await YoutubeBlog.find({ isApproved: true })
+        .populate("categories", "_id name") // Populating category ID and name
+        .sort({ createdAt: -1 });
 
     if (!youtubeBlogs.length) {
         res.status(404);
         throw new Error("No YouTube blogs found");
     }
 
-    res.status(200).json(youtubeBlogs);
+    res.status(200).json(
+        youtubeBlogs.map(ytBlog => ({
+            _id: ytBlog._id,
+            heading: ytBlog.heading,
+            iframeCode: ytBlog.iframeCode,
+            content: ytBlog.content,
+            categories: ytBlog.categories.map(category => ({
+                _id: category._id,
+                name: category.name
+            })),
+            tags: ytBlog.tags,
+            description: ytBlog.description,
+            creator: ytBlog.creator,
+            isApproved: ytBlog.isApproved,
+            createdAt: ytBlog.createdAt
+        }))
+    );
 });
+
 const getArticles = asyncHandler(async (req, res) => {
-    const articles = await Article.find({ isApproved: true }).sort({ createdAt: -1 });
+    const articles = await Article.find({ isApproved: true })
+        .populate("categories", "_id name") // Populating category ID and name
+        .sort({ createdAt: -1 });
 
     if (!articles.length) {
         res.status(404);
         throw new Error("No articles found");
     }
 
-    res.status(200).json(articles);
+    res.status(200).json(
+        articles.map(article => ({
+            _id: article._id,
+            heading: article.heading,
+            content: article.content,
+            categories: article.categories.map(category => ({
+                _id: category._id,
+                name: category.name
+            })),
+            tags: article.tags,
+            description: article.description,
+            bannerImage: article.bannerImage,
+            creator: article.creator,
+            isApproved: article.isApproved,
+            createdAt: article.createdAt
+        }))
+    );
 });
+
 const getTopConsultants = asyncHandler(async (req, res) => {
     const topConsultants = await Doctor.find({ isApproved: true })
         .sort({ experience: -1 }) // Sorting by highest experience
@@ -1432,10 +1493,90 @@ const generateToken = (id) => {
     }
 });
 
+const getMyHistory = asyncHandler(async (req, res) => {
+    const patientId = req.user._id;
+
+    const sessions = await Session.find({ patient: patientId })
+        .populate("doctor", "name specialization profilePicture")
+        .populate("service", "name price")
+        .sort({ date: -1 });
+
+    if (!sessions.length) {
+        return res.status(404).json({ message: "No session history found" });
+    }
+
+    res.status(200).json(sessions);
+});
+const getDoctorServices = asyncHandler(async (req, res) => {
+    const doctorServices = await Service.find({ "doctorPricing.doctor": req.params.doctorId });
+
+    if (!doctorServices.length) {
+        return res.status(404).json({ message: "No services found for this doctor" });
+    }
+
+    res.status(200).json(doctorServices);
+});
+const getPatientReviews = asyncHandler(async (req, res) => {
+    const patientId = req.user._id;
+
+    const reviews = await Session.aggregate([
+        { $match: { "reviews.patient": patientId } },
+        { $unwind: "$reviews" },
+        {
+            $match: { "reviews.patient": patientId }
+        },
+        {
+            $lookup: {
+                from: "doctors",
+                localField: "doctor",
+                foreignField: "_id",
+                as: "doctorDetails"
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                doctorId: { $arrayElemAt: ["$doctorDetails._id", 0] },
+                doctorName: { $arrayElemAt: ["$doctorDetails.name", 0] },
+                rating: "$reviews.rating",
+                comment: "$reviews.comment",
+                createdAt: "$reviews.createdAt"
+            }
+        },
+        { $sort: { createdAt: -1 } }
+    ]);
+
+    if (!reviews.length) {
+        return res.status(404).json({ message: "No reviews found" });
+    }
+
+    res.status(200).json(reviews);
+});
+const resetPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+    const patient = await Patient.findById(req.user._id);
+
+    if (!patient) {
+        return res.status(404).json({ message: "Patient not found" });
+    }
+
+    // Check if old password is correct
+    const isMatch = await bcrypt.compare(oldPassword, patient.password);
+    if (!isMatch) {
+        return res.status(400).json({ message: "Old password is incorrect" });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    patient.password = await bcrypt.hash(newPassword, salt);
+    await patient.save();
+
+    res.status(200).json({ message: "Password reset successfully" });
+});
 
 
 
 
 module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,getPatientProfile,updatePatientProfile,getCategories,getBlogs,getYoutubeBlogs,getArticles,getTopConsultants,getCompletedMeetings,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,getDoctorById,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getPatientPromoCodes};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getPatientPromoCodes,resetPassword,getPatientReviews,getDoctorById,getDoctorServices,getMyHistory};
 

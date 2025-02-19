@@ -69,7 +69,8 @@ const {
     getAllDoctors,
     getDoctorById,
     getPatientSessionHistory,
-    getUpcomingSessions,getPatientProfile,updatePatientProfile,getCategories,getBlogs,getYoutubeBlogs,getArticles,getTopConsultants,getCompletedMeetings
+    getUpcomingSessions,getPatientProfile,updatePatientProfile,getCategories,getBlogs,getYoutubeBlogs,getArticles,getTopConsultants,getCompletedMeetings,
+    getMyHistory,resetPassword,getPatientReviews,getDoctorServices
     
 } = require("../controllers/patientController");
 
@@ -135,6 +136,10 @@ router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
 router.post("/apply-promo-code", protect, patientProtect, applyPromoCode);
 router.get("/promo-codes/:patientId", protect, patientProtect, getPatientPromoCodes);
 
+router.get('/my-history', protect, patientProtect, getMyHistory);
+router.get('/doctor/:doctorId/services', getDoctorServices);
+router.get('/reviews', protect, patientProtect, getPatientReviews);
+router.put('/reset-password', protect, patientProtect, resetPassword);
 
 
 module.exports = router;

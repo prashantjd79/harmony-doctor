@@ -6,24 +6,33 @@ const submitMood = asyncHandler(async (req, res) => {
     const { mood, reason, feelings } = req.body;
     const patientId = req.user._id; // Get patient ID from authentication middleware
 
-    if (!mood || !reason || !feelings) {
+    if (!mood || !reason) {
         res.status(400);
-        throw new Error('All fields are required: mood, reason, and feelings');
+        throw new Error('Mood and reason are required.');
     }
 
-    // Create a new mood entry
+    // Set a default value if "feelings" is not provided
     const moodEntry = await Mood.create({
         patient: patientId,
         mood,
         reason,
-        feelings
+        feelings: feelings || "No additional details provided.",
+        createdAt: new Date() // Ensure createdAt is stored
     });
 
     res.status(201).json({
         message: 'Mood entry submitted successfully!',
-        moodEntry
+        moodEntry: {
+            _id: moodEntry._id,
+            patient: moodEntry.patient,
+            mood: moodEntry.mood,
+            reason: moodEntry.reason,
+            feelings: moodEntry.feelings,
+            createdAt: moodEntry.createdAt
+        }
     });
 });
+
 
 // ✅ Get Mood History for a Patient
 const getMoodHistory = asyncHandler(async (req, res) => {
