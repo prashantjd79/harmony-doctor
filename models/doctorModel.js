@@ -88,10 +88,7 @@ const doctorSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        password: {
-            type: String,
-            required: true,
-        },
+        password: { type: String, required: true },
         isDisabled: {
             type: Boolean,
             default: false,
@@ -171,19 +168,16 @@ const doctorSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Hash password before saving
-doctorSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
+// Hash password before saving (DISABLE THIS TEMPORARILY)
+doctorSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) {
         next();
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // this.password = await bcrypt.hash(this.password, salt);
+    next();
 });
 
-// Match entered password with hashed password
-doctorSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
-};
 
 const Doctor = mongoose.model('Doctor', doctorSchema);
 

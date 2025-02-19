@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const Doctor = require('../models/doctorModel');
-
+const bcrypt = require('bcryptjs');
 // Generate JWT Token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -110,28 +110,46 @@ const doctorSignup = asyncHandler(async (req, res) => {
 // });
 
 // Doctor Login
-const doctorLogin = asyncHandler(async (req, res) => {
+const loginDoctor = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const doctor = await Doctor.findOne({ email });
+    console.log("🔍 Login Request Received");
+    console.log("Email:", email);
 
-    if (doctor && (await doctor.matchPassword(password))) {
-        if (!doctor.isApproved) {
-            res.status(403);
-            throw new Error('Doctor not approved by admin');
-        }
+    // Find doctor
+    const doctor = await Doctor.findOne({ email: email.trim() });
 
-        res.status(200).json({
-            _id: doctor.id,
+    if (!doctor) {
+        console.log("❌ Doctor not found in database");
+        return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    console.log("✅ Doctor Found:", doctor.email);
+    console.log("Stored Hashed Password:", doctor.password);
+
+    // Compare hashed password
+    const isMatch = await bcrypt.compare(password, doctor.password);
+    console.log("Password Match Result:", isMatch);
+
+    if (!isMatch) {
+        console.log("❌ Password does not match");
+        return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    console.log("✅ Login Successful");
+    res.status(200).json({
+        message: "Login successful",
+        doctor: {
+            _id: doctor._id,
             name: doctor.name,
             email: doctor.email,
             specialization: doctor.specialization,
-            token: generateToken(doctor.id),
-        });
-    } else {
-        res.status(401);
-        throw new Error('Invalid email or password');
-    }
+            token: generateToken(doctor._id),
+        },
+    });
 });
 
-module.exports = { doctorSignup, doctorLogin };
+
+
+
+module.exports = { doctorSignup,loginDoctor };

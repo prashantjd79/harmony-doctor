@@ -74,7 +74,8 @@ const express = require('express');
 const router = express.Router();
 
 const { 
-    doctorSignup, doctorLogin 
+    doctorSignup,  
+    loginDoctor
 } = require('../controllers/doctorAuthController');
 const { 
     getCategories, 
@@ -83,14 +84,13 @@ const {
     viewPatientProfile, 
     enrollPricing, 
     updateAvailability, 
-    
     updateDoctorProfile,
     getServiceById,
     getAssignedManager,
     getPatientDetails,
     getCompletedSessions,
     getServicesEnrolled,
-    
+    forgotPassword,resetPasswordWithOTP
      
 } = require('../controllers/doctorController');
 const { getDoctorSessions, } = require('../controllers/doctorController');
@@ -99,7 +99,10 @@ const { getDoctorProfile, } = require('../controllers/doctorController');
 
 // 🔐 Authentication
 router.post('/signup', doctorSignup);
-router.post('/login', doctorLogin);
+router.post('/login', loginDoctor);
+
+router.post("/forgot-password", forgotPassword);
+router.put("/reset-password", resetPasswordWithOTP);
 
 
 

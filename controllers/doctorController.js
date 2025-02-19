@@ -1,6 +1,6 @@
 
 const Manager = require('../models/managerModel');
-
+const bcrypt = require('bcryptjs');
 const Category = require('../models/categoryModel');
 const asyncHandler = require('express-async-handler');
 const Service = require('../models/serviceModel');
@@ -9,6 +9,79 @@ const Patient = require('../models/patientModel');
 const Doctor = require('../models/doctorModel');
 const { sendEmail } = require('../utils/email');
 const { addAppNotification } = require('../utils/notifications');
+
+const nodemailer = require("nodemailer");
+
+
+
+// Temporary store for OTPs (You can use Redis or DB in production)
+const otpStore = new Map(); 
+
+// Setup Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER, // Your email in .env
+        pass: process.env.EMAIL_PASS, // Your email password in .env
+    },
+});
+
+// **1️⃣ Doctor Requests Password Reset**
+const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    const doctor = await Doctor.findOne({ email });
+    if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found with this email" });
+    }
+
+    // Generate OTP (6-digit code)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store OTP temporarily (In real app, store it in DB or Redis)
+    otpStore.set(email, otp);
+
+    // Send OTP to Email
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Password Reset OTP - Your Medical Platform",
+        text: `Your OTP for password reset is: ${otp}. It is valid for 10 minutes.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "OTP sent successfully to your email." });
+});
+
+// **2️⃣ Doctor Resets Password Using OTP**
+const resetPasswordWithOTP = asyncHandler(async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+
+    const storedOtp = otpStore.get(email);
+    if (!storedOtp || storedOtp !== otp) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const doctor = await Doctor.findOne({ email: email.trim() });
+    if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    // ✅ Ensure the password is hashed correctly before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    console.log("🔍 Saving Hashed Password:", hashedPassword);
+
+    doctor.password = hashedPassword;
+    await doctor.save();
+
+    otpStore.delete(email);
+
+    res.status(200).json({ message: "Password reset successfully. You can now log in with your new password." });
+});
+
+
 
 /**
  * @desc Get all categories
@@ -42,23 +115,33 @@ const getServices = asyncHandler(async (req, res) => {
  * @access Protected (Doctor)
  */
 const viewUpcomingSessions = asyncHandler(async (req, res) => {
-    const doctorId = req.user._id; 
+    const doctorId = req.user._id;
+    const now = new Date(); // Current timestamp
+    const todayStart = new Date().setHours(0, 0, 0, 0); // Today at 00:00
+    const nextHour = new Date(now.getTime() + 60 * 60 * 1000); // Current time + 1 hour
 
     const sessions = await Session.find({
         doctor: doctorId,
-        date: { $gte: new Date() },
-        status: 'Scheduled',
+        date: { $gte: todayStart }, // Include today's sessions
+        status: 'Scheduled'
     })
     .populate('patient', 'name')
     .populate('service', 'name duration')
     .sort({ date: 1, timeSlot: 1 });
 
-    if (!sessions || sessions.length === 0) {
-        return res.status(404).json({ message: 'No upcoming sessions found' });
+    // Ensure we include sessions happening in the next hour
+    const upcomingSessions = sessions.filter(session => {
+        const sessionTime = new Date(session.date);
+        return sessionTime >= now || sessionTime >= nextHour;
+    });
+
+    if (!upcomingSessions.length) {
+        return res.status(404).json({ message: 'No upcoming sessions found.' });
     }
 
-    res.status(200).json({ message: 'Upcoming sessions retrieved successfully.', sessions });
+    res.status(200).json({ message: 'Upcoming sessions retrieved successfully.', sessions: upcomingSessions });
 });
+
 
 /**
  * @desc View a patient's profile
@@ -252,20 +335,21 @@ const getAssignedManager = asyncHandler(async (req, res) => {
 
 
 const getPatientDetails = asyncHandler(async (req, res) => {
-    const patient = await Patient.findById(req.params.patientId).select('-password');
+    const { patientId } = req.params;
+    const doctorId = req.user._id; // Get logged-in doctor ID
+
+    // Find the patient and include medical history
+    const patient = await Patient.findById(patientId)
+        .select("name age gender address medicalHistory") // Include medical history
+        .populate("medicalHistory", "document description date"); // Populate medical history if it's referenced
 
     if (!patient) {
-        res.status(404);
-        throw new Error("Patient not found");
+        return res.status(404).json({ message: "Patient not found" });
     }
 
-    // Fetch past sessions with this patient
-    const sessionHistory = await Session.find({ patient: req.params.patientId, doctor: req.user._id })
-        .populate('service', 'name price')
-        .sort({ date: -1 });
-
-    res.status(200).json({ patient, sessionHistory });
+    res.status(200).json(patient);
 });
+
 const getCompletedSessions = asyncHandler(async (req, res) => {
     const completedSessionsCount = await Session.countDocuments({
         doctor: req.user._id,
@@ -280,6 +364,11 @@ const getServicesEnrolled = asyncHandler(async (req, res) => {
     res.status(200).json({ servicesEnrolled: doctorServices.length });
 });
 
+
+
+
+
+
 module.exports = { 
     getCategories, 
     getServices, 
@@ -290,5 +379,5 @@ module.exports = {
     getDoctorSessions,
     getDoctorProfile,
     updateDoctorProfile,
-    getServiceById,getAssignedManager,getPatientDetails,getCompletedSessions,getServicesEnrolled
+    getServiceById,getAssignedManager,getPatientDetails,getCompletedSessions,getServicesEnrolled,forgotPassword,resetPasswordWithOTP
 };
