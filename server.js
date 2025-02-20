@@ -10,7 +10,7 @@ const creatorRoutes = require('./routes/creatorRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const cors = require('cors')
-
+const bodyParser = require("body-parser");
 
 
 const path = require('path');
@@ -18,7 +18,9 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
 app.use(cors());
+app.use(bodyParser.json());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/admin', adminRoutes);

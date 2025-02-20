@@ -45,6 +45,9 @@ const express = require("express");
 const router = express.Router();
 const { protect, patientProtect } = require("../middleware/authMiddleware");
 const { uploadMedicalHistory } = require("../controllers/patientController");
+const { medicalHistoryUpload } = require("../middleware/uploadMiddleware");
+const { singleUpload } = require("../middleware/uploadMiddleware");
+//const { uploadFields } = require("../middleware/uploadMiddleware")
 const { submitSessionReview } = require('../controllers/patientController');
 
 const upload = require("../middleware/uploadMiddleware");
@@ -117,8 +120,13 @@ router.get("/journals", protect, viewJournals);
 router.delete("/journals/:journalId", protect, deleteJournalEntry);
 
 // ✅ Medical History Upload
-router.post("/upload-medical-history", protect, patientProtect, upload.array("files", 5), uploadMedicalHistory);
-
+router.post(
+    "/upload-medical-history",
+    protect,
+    patientProtect,
+    medicalHistoryUpload, // ✅ Uses correct upload middleware
+    uploadMedicalHistory
+);
 // ✅ Payments
 router.post("/pay", protect, payForSession);
 router.get("/payment-history", protect, viewPaymentHistory);

@@ -633,47 +633,65 @@ const viewPaymentHistory = asyncHandler(async (req, res) => {
 });
 
 
+
+
+
+// ✅ Upload Single Medical History File
 const uploadMedicalHistory = asyncHandler(async (req, res) => {
-    console.log("Uploaded Files:", req.files); // Logs the uploaded files
-    console.log("Body Data:", req.body); // Logs all fields in the body
+    console.log("📥 Received Upload Request...");
+    
+    // Check if a file exists
+    console.log("📂 Uploaded File:", req.file);
+    if (!req.file) {
+        console.error("❌ No file received!");
+        return res.status(400).json({ error: "A file is required." });
+    }
+
+    // Extract description
+    console.log("📝 Body Data:", req.body);
+    const description = req.body.description?.trim();
+    if (!description) {
+        console.error("❌ No description provided!");
+        return res.status(400).json({ error: "A description is required for the uploaded file." });
+    }
 
     const patientId = req.user._id;
-    const descriptions = req.body.descriptions; // Array of descriptions
+    console.log(`🔍 Finding patient with ID: ${patientId}`);
 
-    if (!req.files || req.files.length === 0) {
-        res.status(400);
-        throw new Error("At least one file is required.");
-    }
-
-    // **Ensure descriptions match files**
-    if (!Array.isArray(descriptions) || descriptions.length !== req.files.length) {
-        res.status(400);
-        throw new Error("Each file must have a corresponding description.");
-    }
-
-    // **Find the patient in the database**
+    // Find the patient
     const patient = await Patient.findById(patientId);
     if (!patient) {
-        res.status(404);
-        throw new Error("Patient not found.");
+        console.error("❌ Patient not found!");
+        return res.status(404).json({ error: "Patient not found." });
     }
 
-    // **Process uploaded files and descriptions**
-    const medicalHistoryEntries = req.files.map((file, index) => ({
-        document: `/uploads/${file.filename}`,
-        description: descriptions[index].trim(),
+    // Create medical history entry
+    const medicalHistoryEntry = {
+        document: `/uploads/${req.file.filename}`,
+        description,
         date: new Date(),
-    }));
+    };
 
-    // **Save all medical history entries**
-    patient.medicalHistory.push(...medicalHistoryEntries);
+    // Save to database
+    if (!patient.medicalHistory) patient.medicalHistory = [];
+    patient.medicalHistory.push(medicalHistoryEntry);
     await patient.save();
 
+    console.log("✅ Medical history saved successfully.");
+    
     res.status(201).json({
-        message: "Medical history uploaded successfully",
-        medicalHistory: medicalHistoryEntries,
+        message: "Medical history uploaded successfully.",
+        medicalHistory: medicalHistoryEntry,
     });
 });
+
+
+
+
+
+
+
+
 
 
 
