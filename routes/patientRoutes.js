@@ -117,7 +117,7 @@ router.get("/journals", protect, viewJournals);
 router.delete("/journals/:journalId", protect, deleteJournalEntry);
 
 // ✅ Medical History Upload
-router.post("/medical-history", protect, upload.single("file"), uploadMedicalHistory);
+router.post("/upload-medical-history", protect, patientProtect, upload.array("files", 5), uploadMedicalHistory);
 
 // ✅ Payments
 router.post("/pay", protect, payForSession);
