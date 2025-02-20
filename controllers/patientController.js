@@ -1150,13 +1150,12 @@ const getDoctorServices = asyncHandler(async (req, res) => {
 });
 const getPatientReviews = asyncHandler(async (req, res) => {
     const patientId = req.user._id;
+    console.log(`🔍 Fetching reviews for patient ID: ${patientId}`);
 
     const reviews = await Session.aggregate([
         { $match: { "reviews.patient": patientId } },
         { $unwind: "$reviews" },
-        {
-            $match: { "reviews.patient": patientId }
-        },
+        { $match: { "reviews.patient": patientId } },
         {
             $lookup: {
                 from: "doctors",
@@ -1167,9 +1166,10 @@ const getPatientReviews = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                _id: 1,
+                sessionId: "$_id",  // ✅ Include session ID
                 doctorId: { $arrayElemAt: ["$doctorDetails._id", 0] },
                 doctorName: { $arrayElemAt: ["$doctorDetails.name", 0] },
+                categoryId: { $arrayElemAt: ["$doctorDetails.categoryId", 0] }, // ✅ Include category ID
                 rating: "$reviews.rating",
                 comment: "$reviews.comment",
                 createdAt: "$reviews.createdAt"
@@ -1178,12 +1178,19 @@ const getPatientReviews = asyncHandler(async (req, res) => {
         { $sort: { createdAt: -1 } }
     ]);
 
-    if (!reviews.length) {
-        return res.status(404).json({ message: "No reviews found" });
+    console.log(`📢 Aggregation Result:`, reviews);
+
+    if (reviews.length === 0) {
+        return res.status(404).json({ message: "No reviews found for this patient." });
     }
 
-    res.status(200).json(reviews);
+    res.status(200).json({
+        message: "Patient reviews retrieved successfully.",
+        reviews
+    });
 });
+
+
 const resetPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     const patient = await Patient.findById(req.user._id);
@@ -1206,9 +1213,26 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Password reset successfully" });
 });
 
+const getMedicalHistory = async (req, res) => {
+    try {
+        const patientId = req.user._id; // Get patient ID from authenticated user
 
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+            return res.status(404).json({ message: "Patient not found" });
+        }
+
+        res.status(200).json({
+            message: "Medical history retrieved successfully.",
+            medicalHistory: patient.medicalHistory || [],
+        });
+    } catch (error) {
+        console.error("Error retrieving medical history:", error);
+        res.status(500).json({ message: "Failed to retrieve medical history" });
+    }
+};
 
 
 module.exports = { signupPatient,getUpcomingSessions, verifyEmail, loginPatient,viewServices , bookSession ,addJournalEntry, viewJournals ,deleteJournalEntry,getAvailableSlots,payForSession,getPatientProfile,updatePatientProfile,getCategories,getBlogs,getYoutubeBlogs,getArticles,getTopConsultants,getCompletedMeetings,
-    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getPatientPromoCodes,resetPassword,getPatientReviews,getDoctorById,getDoctorServices,getMyHistory};
+    viewPaymentHistory,uploadMedicalHistory,getAllDoctors,startVideoCall,endVideoCall,getPatientSessionHistory,submitSessionReview,getAllCategories,applyPromoCode,getPatientPromoCodes,resetPassword,getPatientReviews,getDoctorById,getDoctorServices,getMyHistory,getMedicalHistory};
 

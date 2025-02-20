@@ -49,6 +49,7 @@ const { medicalHistoryUpload } = require("../middleware/uploadMiddleware");
 const { singleUpload } = require("../middleware/uploadMiddleware");
 //const { uploadFields } = require("../middleware/uploadMiddleware")
 const { submitSessionReview } = require('../controllers/patientController');
+const { getMedicalHistory } = require("../controllers/patientController");
 
 const upload = require("../middleware/uploadMiddleware");
 const { submitMood, getMoodHistory  } = require('../controllers/moodController');
@@ -89,7 +90,7 @@ router.get('/youtube-blogs', getYoutubeBlogs);
 router.get('/articles', getArticles);
 router.get('/consultants/top', getTopConsultants);
 router.get('/stats/completed-meetings', protect, patientProtect, getCompletedMeetings);
-
+router.get("/medical-history", protect, patientProtect, getMedicalHistory);
 
 
 // ✅ Patient Authentication & Signup
