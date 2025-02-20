@@ -16,7 +16,7 @@ const {
     viewDoctorProfiles,
     approveDoctor,
     approveManager,
-    approveCreator,assignToManager,getAllReviews,disapproveCreator,disapproveDoctor,disapproveManager,
+    approveCreator,assignToManager,getAllReviews,disapproveCreator,disapproveDoctor,disapproveManager,getAllSessionReviews,
     getServiceById,getManagers,getCreators,getTopConsultants,getTopCategories,getTopServices
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
@@ -24,13 +24,14 @@ const { protect } = require('../middleware/authMiddleware');
 const { createPromoCode, getAllPromoCodes,  deletePromoCode, } = require("../controllers/adminController");
 
 // Authentication routes
+router.get("/session-reviews", protect, adminProtect, getAllSessionReviews);
 router.post('/signup', adminSignup);
 router.post('/login', adminLogin);
 router.get("/reviews", protect, adminProtect, getAllReviews);
 
-router.put("/disapprove-doctor/:doctorId", disapproveDoctor);
-router.put("/disapprove-creator/:creatorId", disapproveCreator);
-router.put("/disapprove-manager/:managerId", disapproveManager);
+router.put("/disapprove-doctor/:doctorId",protect,adminProtect, disapproveDoctor);
+router.put("/disapprove-creator/:creatorId",protect,adminProtect, disapproveCreator);
+router.put("/disapprove-manager/:managerId",protect,adminProtect, disapproveManager);
 
 
 // Category routes (protected)

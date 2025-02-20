@@ -663,6 +663,41 @@ const getAllReviews = asyncHandler(async (req, res) => {
     res.status(200).json(reviews);
 });
 
+
+const getAllSessionReviews = asyncHandler(async (req, res) => {
+    try {
+        // **Find all sessions with reviews**
+        const sessions = await Session.find({ "reviews": { $exists: true, $ne: [] } })
+            .populate("doctor", "name specialization") // Fetch doctor details
+            .populate("patient", "name email") // Fetch patient details
+            .sort({ date: -1 }); // Sort by most recent
+
+        if (!sessions.length) {
+            return res.status(404).json({ message: "No reviews found" });
+        }
+
+        // **Format Data for Response**
+        const reviews = sessions.flatMap(session =>
+            session.reviews.map(review => ({
+                sessionId: session._id,
+                doctor: { id: session.doctor._id, name: session.doctor.name, specialization: session.doctor.specialization },
+                patient: { id: session.patient._id, name: session.patient.name, email: session.patient.email },
+                rating: review.rating,
+                comment: review.comment,
+                createdAt: review.createdAt
+            }))
+        );
+
+        res.status(200).json({ message: "All session reviews retrieved successfully.", reviews });
+    } catch (error) {
+        console.error("Error fetching session reviews:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+});
+
+
+
+
 module.exports = {
     createCategory,
     getCategories,
@@ -679,7 +714,7 @@ module.exports = {
     approveManager,assignToManager,
     getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,getAllReviews,
     
- createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor
+ createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor,getAllSessionReviews
 
 };
 
