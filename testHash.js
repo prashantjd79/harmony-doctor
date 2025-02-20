@@ -1,16 +1,16 @@
 const bcrypt = require("bcryptjs");
 
-const newPassword = "0000000"; // The password you're trying
+const inputPassword = "1234567"; // Use the password you entered in reset
 
-async function testHash() {
+async function hashAndCompare() {
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    console.log("Newly Hashed Password:", hashedPassword);
+    const newlyHashedPassword = await bcrypt.hash(inputPassword, salt);
+    console.log("Newly Hashed Password:", newlyHashedPassword);
 
-    // Manually compare with the stored hash from MongoDB
-    const storedHash = "$2a$10$y5gr2oO7bjQ92Bw3hO/ggOyCHd8b9rf5Y3E9SLAIrDM.tnTqqxwdq"; // From MongoDB
-    const isMatch = await bcrypt.compare(newPassword, storedHash);
+    // Compare with stored hash from MongoDB
+    const storedHashedPassword = "$2a$10$Vh5KNwmdUaBGqAXNQAfcWeX.7sZ2zH4JOzP/770P15kIq9Y6qlJI6"; // Use your stored MongoDB hash
+    const isMatch = await bcrypt.compare(inputPassword, storedHashedPassword);
     console.log("Password Matches Stored Hash:", isMatch);
 }
 
-testHash();
+hashAndCompare();

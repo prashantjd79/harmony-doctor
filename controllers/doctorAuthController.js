@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+
+
 const asyncHandler = require('express-async-handler');
 const Doctor = require('../models/doctorModel');
 const bcrypt = require('bcryptjs');
@@ -109,45 +111,47 @@ const doctorSignup = asyncHandler(async (req, res) => {
 //     }
 // });
 
-// Doctor Login
+
 const loginDoctor = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    console.log("🔍 Login Request Received");
-    console.log("Email:", email);
-
-    // Find doctor
-    const doctor = await Doctor.findOne({ email: email.trim() });
+    const doctor = await Doctor.findOne({ email });
 
     if (!doctor) {
-        console.log("❌ Doctor not found in database");
         return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    console.log("✅ Doctor Found:", doctor.email);
-    console.log("Stored Hashed Password:", doctor.password);
+    // **Check If Doctor is Approved**
+    if (!doctor.isApproved) {
+        return res.status(403).json({ message: "Your account is not approved yet. Please wait for admin approval." });
+    }
 
-    // Compare hashed password
-    const isMatch = await bcrypt.compare(password, doctor.password);
+    // **Compare Passwords**
+    const isMatch = await doctor.matchPassword(password);
+
+    console.log("🔍 Doctor Found:", doctor.email);
+    console.log("Stored Hashed Password:", doctor.password);
     console.log("Password Match Result:", isMatch);
 
     if (!isMatch) {
-        console.log("❌ Password does not match");
         return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    console.log("✅ Login Successful");
+    // **Generate JWT Token**
+    const token = generateToken(doctor._id);
+
     res.status(200).json({
-        message: "Login successful",
-        doctor: {
-            _id: doctor._id,
-            name: doctor.name,
-            email: doctor.email,
-            specialization: doctor.specialization,
-            token: generateToken(doctor._id),
-        },
+        _id: doctor._id,
+        name: doctor.name,
+        email: doctor.email,
+        isApproved: doctor.isApproved,
+        token // ✅ Now, the response includes a valid JWT token
     });
 });
+
+
+
+
 
 
 

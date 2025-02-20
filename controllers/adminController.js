@@ -352,6 +352,21 @@ const approveDoctor = asyncHandler(async (req, res) => {
     });
 });
 
+const disapproveDoctor = asyncHandler(async (req, res) => {
+    const { doctorId } = req.params;
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    doctor.isApproved = false;
+    await doctor.save();
+
+    res.status(200).json({ message: "Doctor disapproved successfully!" });
+});
+
+
 const approveManager = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const manager = await Manager.findById(id);
@@ -365,6 +380,20 @@ const approveManager = asyncHandler(async (req, res) => {
     await manager.save();
 
     res.status(200).json({ message: 'Manager approved successfully' });
+});
+
+const disapproveManager = asyncHandler(async (req, res) => {
+    const { managerId } = req.params;
+
+    const manager = await Manager.findById(managerId);
+    if (!manager) {
+        return res.status(404).json({ message: "Manager not found" });
+    }
+
+    manager.isApproved = false;
+    await manager.save();
+
+    res.status(200).json({ message: "Manager disapproved successfully!" });
 });
 
 const approveCreator = asyncHandler(async (req, res) => {
@@ -381,6 +410,21 @@ const approveCreator = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'Creator approved successfully' });
 });
+
+const disapproveCreator = asyncHandler(async (req, res) => {
+    const { creatorId } = req.params;
+
+    const creator = await Creator.findById(creatorId);
+    if (!creator) {
+        return res.status(404).json({ message: "Creator not found" });
+    }
+
+    creator.isApproved = false;
+    await creator.save();
+
+    res.status(200).json({ message: "Creator disapproved successfully!" });
+});
+
 
 const assignToManager = asyncHandler(async (req, res) => {
     const { managerId, doctorIds, creatorIds } = req.body;
@@ -635,7 +679,7 @@ module.exports = {
     approveManager,assignToManager,
     getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,getAllReviews,
     
- createPromoCode, getAllPromoCodes,  deletePromoCode,
+ createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor
 
 };
 

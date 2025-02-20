@@ -9,7 +9,7 @@ const managerRoutes = require('./routes/managerRoutes');
 const creatorRoutes = require('./routes/creatorRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-
+const cors = require('cors')
 
 
 

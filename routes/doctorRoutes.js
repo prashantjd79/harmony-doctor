@@ -90,7 +90,7 @@ const {
     getPatientDetails,
     getCompletedSessions,
     getServicesEnrolled,
-    forgotPassword,resetPasswordWithOTP
+    requestPasswordReset,resetPasswordWithOTP
      
 } = require('../controllers/doctorController');
 const { getDoctorSessions, } = require('../controllers/doctorController');
@@ -101,7 +101,9 @@ const { getDoctorProfile, } = require('../controllers/doctorController');
 router.post('/signup', doctorSignup);
 router.post('/login', loginDoctor);
 
-router.post("/forgot-password", forgotPassword);
+router.post("/request-password-reset", requestPasswordReset);
+
+// Route to reset password using OTP
 router.put("/reset-password", resetPasswordWithOTP);
 
 

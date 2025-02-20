@@ -7,79 +7,84 @@ const Service = require('../models/serviceModel');
 const Session = require('../models/sessionModel');
 const Patient = require('../models/patientModel');
 const Doctor = require('../models/doctorModel');
-const { sendEmail } = require('../utils/email');
+const sendEmail = require("../utils/email");
 const { addAppNotification } = require('../utils/notifications');
-
+const { generateOTP, verifyOTP } = require("../utils/generateOTP");
 const nodemailer = require("nodemailer");
 
 
 
-// Temporary store for OTPs (You can use Redis or DB in production)
-const otpStore = new Map(); 
 
-// Setup Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER, // Your email in .env
-        pass: process.env.EMAIL_PASS, // Your email password in .env
-    },
-});
 
-// **1️⃣ Doctor Requests Password Reset**
-const forgotPassword = asyncHandler(async (req, res) => {
+const requestPasswordReset = asyncHandler(async (req, res) => {
     const { email } = req.body;
-    
+
     const doctor = await Doctor.findOne({ email });
-    if (!doctor) {
-        return res.status(404).json({ message: "Doctor not found with this email" });
-    }
 
-    // Generate OTP (6-digit code)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store OTP temporarily (In real app, store it in DB or Redis)
-    otpStore.set(email, otp);
-
-    // Send OTP to Email
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Password Reset OTP - Your Medical Platform",
-        text: `Your OTP for password reset is: ${otp}. It is valid for 10 minutes.`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ message: "OTP sent successfully to your email." });
-});
-
-// **2️⃣ Doctor Resets Password Using OTP**
-const resetPasswordWithOTP = asyncHandler(async (req, res) => {
-    const { email, otp, newPassword } = req.body;
-
-    const storedOtp = otpStore.get(email);
-    if (!storedOtp || storedOtp !== otp) {
-        return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-
-    const doctor = await Doctor.findOne({ email: email.trim() });
     if (!doctor) {
         return res.status(404).json({ message: "Doctor not found" });
     }
 
-    // ✅ Ensure the password is hashed correctly before saving
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    console.log("🔍 Saving Hashed Password:", hashedPassword);
+    // **Generate OTP**
+    const otp = generateOTP(email);
 
-    doctor.password = hashedPassword;
-    await doctor.save();
+    // **Send OTP via Email**
+    await sendEmail(email, "Password Reset OTP", `Your OTP is: ${otp}`);
 
-    otpStore.delete(email);
+    res.status(200).json({ message: "OTP sent to your email." });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const resetPasswordWithOTP = asyncHandler(async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+
+    // **Find doctor by email**
+    const doctor = await Doctor.findOne({ email });
+
+    if (!doctor) {
+        return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    if (!verifyOTP(email, otp)) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // **Ensure Password is Properly Stored**
+    doctor.password = newPassword; // ✅ Assign directly (pre-save hook will hash it)
+    
+    await doctor.save(); // Pre-save hook will hash the password
 
     res.status(200).json({ message: "Password reset successfully. You can now log in with your new password." });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -379,5 +384,5 @@ module.exports = {
     getDoctorSessions,
     getDoctorProfile,
     updateDoctorProfile,
-    getServiceById,getAssignedManager,getPatientDetails,getCompletedSessions,getServicesEnrolled,forgotPassword,resetPasswordWithOTP
+    getServiceById,getAssignedManager,getPatientDetails,getCompletedSessions,getServicesEnrolled,requestPasswordReset,resetPasswordWithOTP
 };

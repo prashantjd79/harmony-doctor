@@ -102,6 +102,7 @@ const doctorSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        disapproved: { type: Boolean, default: false },
         profilePicture: {
             type: String,
             required: false, // URL of the profile picture (1:1 square shape)
@@ -168,15 +169,25 @@ const doctorSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Hash password before saving (DISABLE THIS TEMPORARILY)
 doctorSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) {
-        next();
+    if (!this.isModified("password") || this.password.startsWith("$2a$10$")) {
+        return next(); // ✅ Skips hashing if the password is already hashed
     }
-    // const salt = await bcrypt.genSalt(10);
-    // this.password = await bcrypt.hash(this.password, salt);
-    next();
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
+
+// ✅ Password Match Function
+doctorSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
+
 
 
 const Doctor = mongoose.model('Doctor', doctorSchema);

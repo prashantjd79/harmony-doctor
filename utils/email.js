@@ -1,13 +1,12 @@
-require('dotenv').config(); // Ensure .env is loaded at the top
 const nodemailer = require("nodemailer");
 
-const sendEmail = async ({ to, subject, text }) => {
+const sendEmail = async (to, subject, text) => {
     try {
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
+                user: process.env.EMAIL_USER, // Your email
+                pass: process.env.EMAIL_PASS, // Your email password or app password
             },
         });
 
@@ -18,10 +17,11 @@ const sendEmail = async ({ to, subject, text }) => {
             text,
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log("✅ Email sent successfully:", info.response);
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Email sent to ${to}`);
     } catch (error) {
-        console.error("❌ Email sending failed:", error);
+        console.error(`❌ Email sending failed: ${error.message}`);
+        throw new Error("Failed to send email");
     }
 };
 
