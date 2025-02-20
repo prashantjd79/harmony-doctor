@@ -168,10 +168,30 @@ const createService = asyncHandler(async (req, res) => {
     });
 });
 
+
+
 const getServices = asyncHandler(async (req, res) => {
-    const services = await Service.find({}).populate('category', 'name');
-    res.status(200).json(services);
+    try {
+        const services = await Service.find({})
+            .populate("category", "name") // ✅ Fetch Category Name
+            .populate("doctorPricing.doctor", "name specialization") // ✅ Fetch Doctor Details in Pricing
+            .sort({ createdAt: -1 }); // ✅ Sort by most recent
+
+        if (!services.length) {
+            return res.status(404).json({ message: "No services found." });
+        }
+
+        res.status(200).json({
+            message: "All services retrieved successfully.",
+            services,
+        });
+    } catch (error) {
+        console.error("Error fetching services:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
 });
+
+
 
 const getServiceById = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
