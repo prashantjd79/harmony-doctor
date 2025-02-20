@@ -155,16 +155,7 @@ const updateArticle = asyncHandler(async (req, res) => {
     });
 });
 
-const deleteArticle = asyncHandler(async (req, res) => {
-    const article = await Article.findOne({ _id: req.params.id, creator: req.user._id }); // Ensure ownership
-    if (!article) {
-        res.status(404);
-        throw new Error('Article not found or access denied');
-    }
 
-    await article.remove();
-    res.status(200).json({ message: 'Article deleted successfully' });
-});
 
 const createBlog = asyncHandler(async (req, res) => {
     const { heading, content, categories, tags, description } = req.body;
@@ -468,21 +459,7 @@ const getYoutubeBlogById = asyncHandler(async (req, res) => {
 });
 
 
-const deleteYoutubeBlog = asyncHandler(async (req, res) => {
-    const { id } = req.params;
 
-    const youtubeBlog = await YoutubeBlog.findById(id);
-    if (!youtubeBlog) {
-        res.status(404);
-        throw new Error('YouTube Blog not found.');
-    }
-
-    await youtubeBlog.remove();
-
-    res.status(200).json({
-        message: 'YouTube Blog deleted successfully',
-    });
-});
 
 const getAllBlogs = asyncHandler(async (req, res) => {
     try {
@@ -501,42 +478,7 @@ const getAllBlogs = asyncHandler(async (req, res) => {
     }
 });
 
-const deleteBlog = asyncHandler(async (req, res) => {
-    const { id } = req.params;
 
-    try {
-        // 🔹 Step 1: Find the blog by ID
-        const blog = await Blog.findById(id);
-        if (!blog) {
-            res.status(404);
-            throw new Error("Blog not found");
-        }
-
-        // 🔹 Step 2: Fix field name from `creatorId` to `creator`
-        if (!blog.creator) {
-            res.status(400);
-            throw new Error("This blog is missing a creator ID in the database.");
-        }
-
-        // 🔹 Step 3: Ensure the logged-in creator is the owner of the blog
-        if (!req.user || !req.user._id) {
-            res.status(401);
-            throw new Error("Unauthorized: No user found in request.");
-        }
-
-        if (blog.creator.toString() !== req.user._id.toString()) {
-            res.status(403);
-            throw new Error("Unauthorized: You can only delete your own blog.");
-        }
-
-        // 🔹 Step 4: Delete the blog
-        await Blog.findByIdAndDelete(id);
-        res.status(200).json({ message: "Blog deleted successfully" });
-
-    } catch (error) {
-        res.status(500).json({ message: "Error deleting blog", error: error.message });
-    }
-});
 
 const getAllYouTubeBlogs = asyncHandler(async (req, res) => {
     try {
@@ -556,6 +498,60 @@ const getAllYouTubeBlogs = asyncHandler(async (req, res) => {
         });
     }
 });
+
+
+
+// ✅ Delete an Article
+const deleteArticle = async (req, res) => {
+    try {
+        const article = await Article.findById(req.params.id);
+        if (!article) {
+            return res.status(404).json({ message: "Article not found" });
+        }
+
+        await article.deleteOne();
+        res.status(200).json({ message: "Article deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting article:", error);
+        res.status(500).json({ message: "Failed to delete article" });
+    }
+};
+
+// ✅ Delete a Blog
+const deleteBlog = async (req, res) => {
+    try {
+        const blog = await Blog.findById(req.params.id);
+        if (!blog) {
+            return res.status(404).json({ message: "Blog not found" });
+        }
+
+        await blog.deleteOne();
+        res.status(200).json({ message: "Blog deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting blog:", error);
+        res.status(500).json({ message: "Failed to delete blog" });
+    }
+};
+
+// ✅ Delete a YouTube Blog
+const deleteYoutubeBlog = async (req, res) => {
+    try {
+        const youtubeBlog = await YouTubeBlog.findById(req.params.id);
+        if (!youtubeBlog) {
+            return res.status(404).json({ message: "YouTube Blog not found" });
+        }
+
+        await youtubeBlog.deleteOne();
+        res.status(200).json({ message: "YouTube Blog deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting YouTube blog:", error);
+        res.status(500).json({ message: "Failed to delete YouTube blog" });
+    }
+};
+
+
+
+
 
 module.exports={creatorSignup,creatorLogin, createArticle,
     getArticles,
