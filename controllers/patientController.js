@@ -17,10 +17,6 @@ const PromoCode = require("../models/promoCodeModel");
 
 
 
-
-
-
-
 // ✅ Apply Promo Code (Fix Mental Health Check)
 const applyPromoCode = asyncHandler(async (req, res) => {
     const { code, patientId, transactionCount } = req.body;
@@ -90,75 +86,6 @@ const applyPromoCode = asyncHandler(async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Book a Session
-// const bookSession = asyncHandler(async (req, res) => {
-//     const { serviceId, doctorId, date, timeSlot } = req.body;
-//     const patientId = req.user._id; // Assumes patient is authenticated
-
-//     // Validate required fields
-//     if (!serviceId || !doctorId || !date || !timeSlot) {
-//         res.status(400);
-//         throw new Error('All fields (serviceId, doctorId, date, timeSlot) are required');
-//     }
-
-//     // Ensure the doctor offers this service
-//     const service = await Service.findById(serviceId);
-//     if (!service) {
-//         res.status(404);
-//         throw new Error('Service not found');
-//     }
-
-//     const isDoctorService = service.doctorPricing.some(
-//         (pricing) => pricing.doctor.toString() === doctorId
-//     );
-//     if (!isDoctorService) {
-//         res.status(403);
-//         throw new Error('This doctor does not provide the selected service');
-//     }
-
-//     // Check for conflicting sessions
-//     const existingSession = await Session.findOne({
-//         doctor: doctorId,
-//         date: new Date(date),
-//         timeSlot,
-//     });
-
-//     if (existingSession) {
-//         res.status(400);
-//         throw new Error('The doctor is already booked for this time slot');
-//     }
-
-//     // Create the session
-//     const session = await Session.create({
-//         patient: patientId,
-//         doctor: doctorId,
-//         service: serviceId,
-//         date: new Date(date),
-//         timeSlot,
-//     });
-
-//     res.status(201).json({
-//         message: 'Session booked successfully',
-//         session,
-//     });
-// });
-
 require("dotenv").config(); // Load environment variables
 const { RtcTokenBuilder, RtcRole } = require("agora-token");
 
@@ -199,128 +126,6 @@ const generateAgoraToken = (channelName, userId) => {
 	return tokenWithUserAccount;
 };
 
-
-
-
-
-// const bookSession = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("Received Request Body:", req.body);
-
-//         const { serviceId, doctorId, date, timeSlot, email, paymentAmount } = req.body;
-//         const patientId = req.user?._id;
-
-//         if (!serviceId || !doctorId || !date || !timeSlot || !email || !paymentAmount) {
-//             return res.status(400).json({ error: "All fields (serviceId, doctorId, date, timeSlot, email, paymentAmount) are required" });
-//         }
-
-//         if (!patientId) {
-//             return res.status(401).json({ error: "Patient authentication failed" });
-//         }
-
-//         // 🔹 Fetch the doctor's availability
-//         const doctor = await Doctor.findById(doctorId);
-//         if (!doctor) {
-//             return res.status(404).json({ error: "Doctor not found" });
-//         }
-
-//         // 🔹 Ensure date matches doctor's availability
-//         const doctorAvailability = doctor.availability.find(avail =>
-//             moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
-//         );
-
-//         if (!doctorAvailability) {
-//             return res.status(400).json({ error: "Doctor is not available on this date." });
-//         }
-
-//         // 🔹 Convert selected time slot into start and end timestamps
-//         const [startTime, endTime] = timeSlot.split(" - ").map(t => moment(t, "hh:mm A"));
-
-//         if (!startTime.isValid() || !endTime.isValid()) {
-//             return res.status(400).json({ error: "Invalid time slot format. Use '2 PM - 3 PM' format." });
-//         }
-
-//         // 🔥 **Strict Validation: Ensure Only Hourly Slots**
-//         if (startTime.minute() !== 0 || endTime.minute() !== 0) {
-//             return res.status(400).json({ error: "Invalid time slot. You can only book full hours (e.g., '2 PM - 3 PM')." });
-//         }
-
-//         // 🔹 Ensure time slot is within the doctor's available hours
-//         const isAvailableSlot = doctorAvailability.slots.some(slot => {
-//             const availableStart = moment(slot.start, "hh A");
-//             const availableEnd = moment(slot.end, "hh A");
-//             return startTime.isSameOrAfter(availableStart) && endTime.isSameOrBefore(availableEnd);
-//         });
-
-//         if (!isAvailableSlot) {
-//             return res.status(400).json({ error: "Selected time slot is outside the doctor's available hours." });
-//         }
-
-//         // 🔥 **Check for already booked hour slots**
-//         const overlappingSession = await Session.findOne({
-//             doctor: doctorId,
-//             date: new Date(date),
-//             timeSlot: timeSlot, // Exact hour match only
-//         });
-
-//         if (overlappingSession) {
-//             return res.status(400).json({ error: "The selected time slot is already booked. Choose a different hour." });
-//         }
-
-//         // 🔹 Validate payment amount
-//         const service = await Service.findById(serviceId);
-//         if (!service) {
-//             return res.status(404).json({ error: "Service not found" });
-//         }
-
-//         const doctorServicePricing = service.doctorPricing.find(pricing => pricing.doctor.toString() === doctorId);
-//         if (!doctorServicePricing) {
-//             return res.status(403).json({ error: "This doctor does not provide the selected service" });
-//         }
-
-//         if (paymentAmount !== doctorServicePricing.fee) {
-//             return res.status(400).json({ error: `Incorrect payment amount. The required fee is ${doctorServicePricing.fee}` });
-//         }
-
-//         // ✅ Generate Agora Video Call Credentials
-//         const agoraChannel = `session_${doctorId}_${patientId}_${Date.now()}`;
-//         const doctorToken = generateAgoraToken(agoraChannel, doctorId);
-//         const patientToken = generateAgoraToken(agoraChannel, patientId);
-
-//         // ✅ Create the session in MongoDB
-//         const session = await Session.create({
-//             patient: patientId,
-//             doctor: doctorId,
-//             service: serviceId,
-//             date: new Date(date),
-//             timeSlot,
-//             videoCall: {
-//                 channelName: agoraChannel,
-//                 doctorToken,
-//                 patientToken,
-//                 callStatus: "Not Started",
-//             },
-//             paymentDetails: { status: "Paid" },
-//         });
-
-//         console.log("Session Created Successfully:", session);
-
-//         // ✅ Send Confirmation Email to the Patient
-//         await sendEmail({
-//             to: email,
-//             subject: "Session Booking Confirmation",
-//             text: `Your session with Doctor ID: ${doctorId} is booked for ${date} at ${timeSlot}. Payment of ${paymentAmount} received successfully.`,
-//         });
-
-//         res.status(201).json({
-//             message: "Session booked successfully. Email sent to patient.",
-//             session,
-//         });
-//     } catch (error) {
-//         console.error("Error in bookSession:", error);
-//         res.status(500).json({ error: error.message });
-//     }
-// });
 
 
 const bookSession = asyncHandler(async (req, res) => {
@@ -446,20 +251,6 @@ const bookSession = asyncHandler(async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const mongoose = require("mongoose");
 
 
@@ -513,19 +304,6 @@ const getPatientSessionHistory = asyncHandler(async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -628,40 +406,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Email verified successfully' });
 });
 
-// Patient Login
-// const loginPatient = asyncHandler(async (req, res) => {
-//     const { email, password } = req.body;
 
-//     if (!email || !password) {
-//         res.status(400);
-//         throw new Error('Email and Password are required');
-//     }
-
-//     const patient = await Patient.findOne({ email });
-//     if (!patient) {
-//         res.status(404);
-//         throw new Error('Invalid email or password');
-//     }
-
-//     if (!patient.isEmailVerified) {
-//         res.status(401);
-//         throw new Error('Email not verified. Please verify your email before logging in.');
-//     }
-
-//     const isPasswordMatch = await bcrypt.compare(password, patient.password);
-//     if (!isPasswordMatch) {
-//         res.status(401);
-//         throw new Error('Invalid email or password');
-//     }
-
-//     const token = jwt.sign({ id: patient._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-
-//     res.status(200).json({ message: 'Login successful', token });
-// });
-
-
-
-// Add a Journal Entry
 const addJournalEntry = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
     const patientId = req.user._id;
@@ -747,79 +492,6 @@ const deleteJournalEntry = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Journal entry deleted successfully' });
 });
 
-// const getAvailableSlots = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("Received Request Body:", req.body);
-
-//         const { doctorId, date } = req.body;
-
-//         if (!doctorId || !date) {
-//             console.log("❌ Missing doctorId or date in request.");
-//             return res.status(400).json({ error: "Doctor ID and date are required." });
-//         }
-
-//         // 🔹 Fetch doctor availability
-//         const doctor = await Doctor.findById(doctorId);
-//         if (!doctor) {
-//             console.log("❌ Doctor not found:", doctorId);
-//             return res.status(404).json({ error: "Doctor not found." });
-//         }
-
-//         console.log("✅ Doctor found:", doctor.name);
-
-//         const doctorAvailability = doctor.availability.find(avail =>
-//             moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
-//         );
-
-//         if (!doctorAvailability) {
-//             console.log("❌ Doctor is not available on this date:", date);
-//             return res.status(400).json({ error: "Doctor is not available on this date." });
-//         }
-
-//         console.log("✅ Doctor availability on", date, ":", doctorAvailability);
-
-//         // 🔹 Fetch booked sessions for the selected date
-//         const bookedSessions = await Session.find({ doctor: doctorId, date: new Date(date) });
-
-//         console.log("📌 Booked sessions found:", bookedSessions.length, "sessions");
-//         console.log("📌 Booked session details:", bookedSessions);
-
-//         // 🔹 Extract booked time slots
-//         const bookedTimes = bookedSessions.map(session => session.timeSlot.split(" - ")[0]); // Get start hour (e.g., "2 PM")
-//         console.log("🚫 Booked Times:", bookedTimes);
-
-//         let availableSlots = [];
-//         doctorAvailability.slots.forEach(slot => {
-//             const startHour = slot.start.split(":")[0] + " PM"; // Convert to match booked format (e.g., "2 PM")
-//             const endHour = slot.end.split(":")[0] + " PM";
-
-//             let start = moment(startHour, "h A");
-//             let end = moment(endHour, "h A");
-
-//             while (start.isBefore(end)) {
-//                 let slotStart = start.format("h A");
-//                 let slotEnd = start.add(1, 'hour').format("h A");
-
-//                 if (!bookedTimes.includes(slotStart)) {
-//                     availableSlots.push({ start: slotStart, end: slotEnd, status: "Available" });
-//                 }
-//             }
-//         });
-
-//         console.log("✅ Final Updated Available Slots:", availableSlots);
-
-//         res.status(200).json({
-//             message: "Available slots retrieved successfully.",
-//             availableSlots,
-//         });
-//     } catch (error) {
-//         console.error("❌ Error in getAvailableSlots:", error);
-//         res.status(500).json({ error: error.message });
-//     }
-// });
-
-
-
 
 const getAvailableSlots = asyncHandler(async (req, res) => {
     try {
@@ -895,14 +567,6 @@ const getAvailableSlots = asyncHandler(async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
 const payForSession = asyncHandler(async (req, res) => {
     const { sessionId, paymentMethod } = req.body;
 
@@ -967,44 +631,51 @@ const viewPaymentHistory = asyncHandler(async (req, res) => {
         })),
     });
 });
-const uploadMedicalHistory = asyncHandler(async (req, res) => {
-    console.log('Uploaded File:', req.file); // Logs the uploaded file
-    console.log('Body Data:', req.body); // Logs all fields in the body
 
-    // Check if the file and description are provided
-    const description = req.body.description?.trim(); // Safely access and trim the description
-    if (!req.file || !description) {
+
+const uploadMedicalHistory = asyncHandler(async (req, res) => {
+    console.log("Uploaded Files:", req.files); // Logs the uploaded files
+    console.log("Body Data:", req.body); // Logs all fields in the body
+
+    const patientId = req.user._id;
+    const descriptions = req.body.descriptions; // Array of descriptions
+
+    if (!req.files || req.files.length === 0) {
         res.status(400);
-        throw new Error('File and description are required');
+        throw new Error("At least one file is required.");
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
-    const patientId = req.user._id;
+    // **Ensure descriptions match files**
+    if (!Array.isArray(descriptions) || descriptions.length !== req.files.length) {
+        res.status(400);
+        throw new Error("Each file must have a corresponding description.");
+    }
 
-    // Find the patient in the database
+    // **Find the patient in the database**
     const patient = await Patient.findById(patientId);
     if (!patient) {
         res.status(404);
-        throw new Error('Patient not found');
+        throw new Error("Patient not found.");
     }
 
-    // Add medical history entry
-    const medicalHistoryEntry = {
-        document: fileUrl,
-        description,
+    // **Process uploaded files and descriptions**
+    const medicalHistoryEntries = req.files.map((file, index) => ({
+        document: `/uploads/${file.filename}`,
+        description: descriptions[index].trim(),
         date: new Date(),
-    };
+    }));
 
-    // Save the medical history
-    if (!patient.medicalHistory) patient.medicalHistory = [];
-    patient.medicalHistory.push(medicalHistoryEntry);
+    // **Save all medical history entries**
+    patient.medicalHistory.push(...medicalHistoryEntries);
     await patient.save();
 
     res.status(201).json({
-        message: 'Medical history uploaded successfully',
-        medicalHistory: medicalHistoryEntry,
+        message: "Medical history uploaded successfully",
+        medicalHistory: medicalHistoryEntries,
     });
 });
+
+
 
 
 
@@ -1144,63 +815,6 @@ const getUpcomingSessions = asyncHandler(async (req, res) => {
 
 
 
-// const submitSessionReview = asyncHandler(async (req, res) => {
-//     const { sessionId } = req.params;
-//     const { rating, comment } = req.body;
-//     const patientId = req.user._id; // Logged-in patient
-
-//     // Validate inputs
-//     if (!rating || rating < 1 || rating > 5) {
-//         res.status(400);
-//         throw new Error("Rating must be between 1 and 5");
-//     }
-
-//     // Find the session
-//     const session = await Session.findById(sessionId);
-//     if (!session) {
-//         res.status(404);
-//         throw new Error("Session not found");
-//     }
-
-//     // Ensure the session is completed
-//     if (session.status !== "Completed") {
-//         res.status(400);
-//         throw new Error("You can only review completed sessions");
-//     }
-
-//     // Ensure the `reviews` array exists
-//     if (!session.reviews) {
-//         session.reviews = [];
-//     }
-
-//     // Check if the patient has already submitted a review
-//     const existingReviewIndex = session.reviews.findIndex(
-//         (review) => review.patient.toString() === patientId.toString()
-//     );
-
-//     if (existingReviewIndex !== -1) {
-//         // Patient has already reviewed → Update existing review
-//         session.reviews[existingReviewIndex].rating = rating;
-//         session.reviews[existingReviewIndex].comment = comment;
-//         session.reviews[existingReviewIndex].createdAt = new Date();
-//     } else {
-//         // Add new review if the patient hasn't reviewed before
-//         session.reviews.push({
-//             patient: patientId,
-//             rating,
-//             comment,
-//             createdAt: new Date(),
-//         });
-//     }
-
-//     // Save updated session to database
-//     await session.save();
-
-//     res.status(200).json({
-//         message: "Review submitted successfully",
-//         reviews: session.reviews,
-//     });
-// });
 const submitSessionReview = asyncHandler(async (req, res) => {
     const { sessionId } = req.params;
     const { rating, comment } = req.body;
