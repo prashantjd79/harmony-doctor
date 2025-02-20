@@ -127,18 +127,26 @@ const viewUpcomingSessions = asyncHandler(async (req, res) => {
 
     const sessions = await Session.find({
         doctor: doctorId,
-        date: { $gte: todayStart }, // Include today's sessions
+        date: { $gte: todayStart }, // Include today's and future sessions
         status: 'Scheduled'
     })
     .populate('patient', 'name')
     .populate('service', 'name duration')
     .sort({ date: 1, timeSlot: 1 });
 
-    // Ensure we include sessions happening in the next hour
+    console.log("All Scheduled Sessions:", sessions);
+
+    // **Ensure we include sessions happening today from the current time onwards**
     const upcomingSessions = sessions.filter(session => {
-        const sessionTime = new Date(session.date);
-        return sessionTime >= now || sessionTime >= nextHour;
+        const sessionDate = new Date(session.date);
+        return (
+            (sessionDate.toDateString() === now.toDateString() && sessionDate >= now) || // Include today's upcoming sessions
+            sessionDate >= nextHour || // Include next hour's session
+            sessionDate > todayStart // Ensure future dates are included
+        );
     });
+
+    console.log("Filtered Upcoming Sessions:", upcomingSessions);
 
     if (!upcomingSessions.length) {
         return res.status(404).json({ message: 'No upcoming sessions found.' });
@@ -146,6 +154,7 @@ const viewUpcomingSessions = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'Upcoming sessions retrieved successfully.', sessions: upcomingSessions });
 });
+
 
 
 /**
