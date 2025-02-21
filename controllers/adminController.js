@@ -19,85 +19,54 @@ const Creator = require('../models/creatorModel');
 
 
 const getDoctorFinancialReport = asyncHandler(async (req, res) => {
-    console.log("🔍 Fetching Doctor Financial Report...");
-
     const doctorPayments = await Session.aggregate([
+        { $match: { "paymentDetails.status": "Paid" } }, // ✅ Only Paid Sessions
         {
             $lookup: {
                 from: "doctors",
                 localField: "doctor",
                 foreignField: "_id",
-                as: "doctorDetails"
+                as: "doctorInfo"
             }
         },
+        { $unwind: "$doctorInfo" },
         {
             $lookup: {
                 from: "services",
                 localField: "service",
                 foreignField: "_id",
-                as: "serviceDetails"
+                as: "serviceInfo"
             }
         },
-        {
-            $lookup: {
-                from: "payments",
-                localField: "_id",
-                foreignField: "sessionId",
-                as: "paymentDetails"
-            }
-        },
-        {
-            $unwind: "$doctorDetails"
-        },
-        {
-            $unwind: "$serviceDetails"
-        },
-        {
-            $unwind: {
-                path: "$paymentDetails",
-                preserveNullAndEmptyArrays: true  // Handles unpaid sessions
-            }
-        },
+        { $unwind: "$serviceInfo" },
         {
             $group: {
-                _id: {
-                    doctorId: "$doctorDetails._id",
-                    doctorName: "$doctorDetails.name",
-                    serviceId: "$serviceDetails._id",
-                    serviceName: "$serviceDetails.name",
-                    doctorPrice: "$doctorDetails.pricing"  // Fetching doctor-defined price
+                _id: "$doctor",
+                doctorName: { $first: "$doctorInfo.name" },
+                totalSessions: { $sum: 1 },
+                totalEarnings: { 
+                    $sum: { $ifNull: ["$paymentDetails.amount", 0] } // ✅ Ensure `amount` is included
                 },
-                sessionCount: { $sum: 1 },
-                totalEarnings: { $sum: { $ifNull: ["$paymentDetails.amount", 0] } }
-            }
-        },
-        {
-            $group: {
-                _id: "$_id.doctorId",
-                doctorName: { $first: "$_id.doctorName" },
                 services: {
                     $push: {
-                        serviceId: "$_id.serviceId",
-                        serviceName: "$_id.serviceName",
-                        doctorPrice: "$_id.doctorPrice",
-                        sessionCount: "$sessionCount",
-                        totalEarnings: "$totalEarnings"
+                        serviceId: "$service",
+                        serviceName: "$serviceInfo.name",
+                        sessionCount: { $sum: 1 },
+                        totalEarnings: { 
+                            $sum: { $ifNull: ["$paymentDetails.amount", 0] } // ✅ Ensure `amount` is included
+                        }
                     }
-                },
-                totalSessions: { $sum: "$sessionCount" },
-                totalEarnings: { $sum: "$totalEarnings" }
+                }
             }
-        },
-        { $sort: { totalEarnings: -1 } }
+        }
     ]);
-
-    console.log("📊 Doctor Financial Report:", doctorPayments);
 
     res.status(200).json({
         message: "Doctor financial report retrieved successfully.",
         doctorPayments
     });
 });
+
 
 
 

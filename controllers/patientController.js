@@ -129,6 +129,130 @@ const generateAgoraToken = (channelName, userId) => {
 
 
 
+// const bookSession = asyncHandler(async (req, res) => {
+//     try {
+//         console.log("Received Request Body:", req.body);
+
+//         const { serviceId, doctorId, date, timeSlot, email, paymentAmount } = req.body;
+//         const patientId = req.user?._id;
+
+//         if (!serviceId || !doctorId || !date || !timeSlot || !email || !paymentAmount) {
+//             return res.status(400).json({ error: "All fields (serviceId, doctorId, date, timeSlot, email, paymentAmount) are required" });
+//         }
+
+//         if (!patientId) {
+//             return res.status(401).json({ error: "Patient authentication failed" });
+//         }
+
+//         // 🔹 Fetch the doctor's availability
+//         const doctor = await Doctor.findById(doctorId);
+//         if (!doctor) {
+//             return res.status(404).json({ error: "Doctor not found" });
+//         }
+
+//         // 🔹 Ensure date matches doctor's availability
+//         const doctorAvailability = doctor.availability.find(avail =>
+//             moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
+//         );
+
+//         if (!doctorAvailability) {
+//             return res.status(400).json({ error: "Doctor is not available on this date." });
+//         }
+
+//         // 🔹 Convert selected time slot into start and end timestamps
+//         const [startTime, endTime] = timeSlot.split(" - ").map(t => moment(t, "h A"));
+
+//         if (!startTime.isValid() || !endTime.isValid()) {
+//             return res.status(400).json({ error: "Invalid time slot format. Use '2 PM - 3 PM' format." });
+//         }
+
+//         // 🔥 **Strict Validation: Ensure Only One-Hour Slots**
+//         const duration = moment.duration(endTime.diff(startTime));
+//         if (duration.asHours() !== 1) {
+//             return res.status(400).json({ error: "You can only book a session for exactly one hour." });
+//         }
+
+//         // 🔹 Ensure time slot is within the doctor's available hours
+//         const isAvailableSlot = doctorAvailability.slots.some(slot => {
+//             const availableStart = moment(slot.start, "h A");
+//             const availableEnd = moment(slot.end, "h A");
+//             return startTime.isSameOrAfter(availableStart) && endTime.isSameOrBefore(availableEnd);
+//         });
+
+//         if (!isAvailableSlot) {
+//             return res.status(400).json({ error: "Selected time slot is outside the doctor's available hours." });
+//         }
+
+//         // 🔥 **Check for already booked hour slots**
+//         const overlappingSession = await Session.findOne({
+//             doctor: doctorId,
+//             date: new Date(date),
+//             timeSlot: timeSlot, // Exact hour match only
+//         });
+
+//         if (overlappingSession) {
+//             return res.status(400).json({ error: "The selected time slot is already booked. Choose a different hour." });
+//         }
+
+//         // 🔹 Validate payment amount
+//         const service = await Service.findById(serviceId);
+//         if (!service) {
+//             return res.status(404).json({ error: "Service not found" });
+//         }
+
+//         const doctorServicePricing = service.doctorPricing.find(pricing => pricing.doctor.toString() === doctorId);
+//         if (!doctorServicePricing) {
+//             return res.status(403).json({ error: "This doctor does not provide the selected service" });
+//         }
+
+//         if (paymentAmount !== doctorServicePricing.fee) {
+//             return res.status(400).json({ error: `Incorrect payment amount. The required fee is ${doctorServicePricing.fee}` });
+//         }
+
+//         // ✅ Generate Agora Video Call Credentials
+//         const agoraChannel = `${doctorId}${patientId}${Date.now()}`;
+//         const doctorToken = generateAgoraToken(agoraChannel, doctorId);
+//         const patientToken = generateAgoraToken(agoraChannel, patientId);
+
+//         // ✅ Create the session in MongoDB
+//         const session = await Session.create({
+//             patient: patientId,
+//             doctor: doctorId,
+//             service: serviceId,
+//             date: new Date(date),
+//             timeSlot,
+//             videoCall: {
+//                 channelName: agoraChannel,
+//                 doctorToken,
+//                 patientToken,
+//                 callStatus: "Not Started",
+//             },
+//             paymentDetails: { status: "Paid" },
+//         });
+
+//         console.log("Session Created Successfully:", session);
+
+//         // ✅ Send Confirmation Email to the Patient
+//         await sendEmail({
+//             to: email,
+//             subject: "Session Booking Confirmation",
+//             text: `Your session with Doctor ID: ${doctorId} is booked for ${date} at ${timeSlot}. Payment of ${paymentAmount} received successfully.`,
+//         });
+
+//         res.status(201).json({
+//             message: "Session booked successfully. Email sent to patient.",
+//             session,
+//         });
+//     } catch (error) {
+//         console.error("Error in bookSession:", error);
+//         res.status(500).json({ error: error.message });
+//     }
+// });
+
+
+
+
+
 const bookSession = asyncHandler(async (req, res) => {
     try {
         console.log("Received Request Body:", req.body);
@@ -144,62 +268,19 @@ const bookSession = asyncHandler(async (req, res) => {
             return res.status(401).json({ error: "Patient authentication failed" });
         }
 
-        // 🔹 Fetch the doctor's availability
+        // Fetch doctor
         const doctor = await Doctor.findById(doctorId);
         if (!doctor) {
             return res.status(404).json({ error: "Doctor not found" });
         }
 
-        // 🔹 Ensure date matches doctor's availability
-        const doctorAvailability = doctor.availability.find(avail =>
-            moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
-        );
-
-        if (!doctorAvailability) {
-            return res.status(400).json({ error: "Doctor is not available on this date." });
-        }
-
-        // 🔹 Convert selected time slot into start and end timestamps
-        const [startTime, endTime] = timeSlot.split(" - ").map(t => moment(t, "h A"));
-
-        if (!startTime.isValid() || !endTime.isValid()) {
-            return res.status(400).json({ error: "Invalid time slot format. Use '2 PM - 3 PM' format." });
-        }
-
-        // 🔥 **Strict Validation: Ensure Only One-Hour Slots**
-        const duration = moment.duration(endTime.diff(startTime));
-        if (duration.asHours() !== 1) {
-            return res.status(400).json({ error: "You can only book a session for exactly one hour." });
-        }
-
-        // 🔹 Ensure time slot is within the doctor's available hours
-        const isAvailableSlot = doctorAvailability.slots.some(slot => {
-            const availableStart = moment(slot.start, "h A");
-            const availableEnd = moment(slot.end, "h A");
-            return startTime.isSameOrAfter(availableStart) && endTime.isSameOrBefore(availableEnd);
-        });
-
-        if (!isAvailableSlot) {
-            return res.status(400).json({ error: "Selected time slot is outside the doctor's available hours." });
-        }
-
-        // 🔥 **Check for already booked hour slots**
-        const overlappingSession = await Session.findOne({
-            doctor: doctorId,
-            date: new Date(date),
-            timeSlot: timeSlot, // Exact hour match only
-        });
-
-        if (overlappingSession) {
-            return res.status(400).json({ error: "The selected time slot is already booked. Choose a different hour." });
-        }
-
-        // 🔹 Validate payment amount
+        // Fetch service
         const service = await Service.findById(serviceId);
         if (!service) {
             return res.status(404).json({ error: "Service not found" });
         }
 
+        // Validate doctor's pricing
         const doctorServicePricing = service.doctorPricing.find(pricing => pricing.doctor.toString() === doctorId);
         if (!doctorServicePricing) {
             return res.status(403).json({ error: "This doctor does not provide the selected service" });
@@ -214,7 +295,7 @@ const bookSession = asyncHandler(async (req, res) => {
         const doctorToken = generateAgoraToken(agoraChannel, doctorId);
         const patientToken = generateAgoraToken(agoraChannel, patientId);
 
-        // ✅ Create the session in MongoDB
+        // ✅ Create the session with the correct amount in `paymentDetails`
         const session = await Session.create({
             patient: patientId,
             doctor: doctorId,
@@ -227,12 +308,17 @@ const bookSession = asyncHandler(async (req, res) => {
                 patientToken,
                 callStatus: "Not Started",
             },
-            paymentDetails: { status: "Paid" },
+            paymentDetails: { 
+                transactionId: `TXN-${Date.now()}`, // Generate a fake transaction ID
+                amount: paymentAmount,  // ✅ Store the amount in session
+                method: "Credit Card",  // ✅ Assuming payment method is Credit Card
+                status: "Paid"
+            }
         });
 
         console.log("Session Created Successfully:", session);
 
-        // ✅ Send Confirmation Email to the Patient
+        // ✅ Send Confirmation Email
         await sendEmail({
             to: email,
             subject: "Session Booking Confirmation",
@@ -248,6 +334,14 @@ const bookSession = asyncHandler(async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+
+
+
+
+
+
 
 
 
