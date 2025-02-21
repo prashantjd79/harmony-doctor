@@ -101,7 +101,7 @@ router.post("/login", loginPatient);
 router.put('/sessions/:sessionId/review', protect, submitSessionReview);
 // ✅ Viewing Services & Doctors
 router.get("/services", protect, viewServices);
-router.get("/doctors", protect, getAllDoctors);
+router.get("/doctors",  getAllDoctors);
 router.get("/doctors/:doctorId", protect, getDoctorById);
 
 // ✅ Booking & Sessions
