@@ -268,19 +268,62 @@ const bookSession = asyncHandler(async (req, res) => {
             return res.status(401).json({ error: "Patient authentication failed" });
         }
 
-        // Fetch doctor
+        // 🔹 Fetch the doctor's availability
         const doctor = await Doctor.findById(doctorId);
         if (!doctor) {
             return res.status(404).json({ error: "Doctor not found" });
         }
 
-        // Fetch service
+        // 🔹 Ensure date matches doctor's availability
+        const doctorAvailability = doctor.availability.find(avail =>
+            moment(avail.date).format("YYYY-MM-DD") === moment(date).format("YYYY-MM-DD")
+        );
+
+        if (!doctorAvailability) {
+            return res.status(400).json({ error: "Doctor is not available on this date." });
+        }
+
+        // 🔹 Convert selected time slot into start and end timestamps
+        const [startTime, endTime] = timeSlot.split(" - ").map(t => moment(t, "h A"));
+
+        if (!startTime.isValid() || !endTime.isValid()) {
+            return res.status(400).json({ error: "Invalid time slot format. Use '2 PM - 3 PM' format." });
+        }
+
+        // 🔥 **Strict Validation: Ensure Only One-Hour Slots**
+        const duration = moment.duration(endTime.diff(startTime));
+        if (duration.asHours() !== 1) {
+            return res.status(400).json({ error: "You can only book a session for exactly one hour." });
+        }
+
+        // 🔹 Ensure time slot is within the doctor's available hours
+        const isAvailableSlot = doctorAvailability.slots.some(slot => {
+            const availableStart = moment(slot.start, "h A");
+            const availableEnd = moment(slot.end, "h A");
+            return startTime.isSameOrAfter(availableStart) && endTime.isSameOrBefore(availableEnd);
+        });
+
+        if (!isAvailableSlot) {
+            return res.status(400).json({ error: "Selected time slot is outside the doctor's available hours." });
+        }
+
+        // 🔥 **Check for already booked hour slots**
+        const overlappingSession = await Session.findOne({
+            doctor: doctorId,
+            date: new Date(date),
+            timeSlot: timeSlot, // Exact hour match only
+        });
+
+        if (overlappingSession) {
+            return res.status(400).json({ error: "The selected time slot is already booked. Choose a different hour." });
+        }
+
+        // 🔹 Validate payment amount
         const service = await Service.findById(serviceId);
         if (!service) {
             return res.status(404).json({ error: "Service not found" });
         }
 
-        // Validate doctor's pricing
         const doctorServicePricing = service.doctorPricing.find(pricing => pricing.doctor.toString() === doctorId);
         if (!doctorServicePricing) {
             return res.status(403).json({ error: "This doctor does not provide the selected service" });
@@ -295,7 +338,7 @@ const bookSession = asyncHandler(async (req, res) => {
         const doctorToken = generateAgoraToken(agoraChannel, doctorId);
         const patientToken = generateAgoraToken(agoraChannel, patientId);
 
-        // ✅ Create the session with the correct amount in `paymentDetails`
+        // ✅ Create the session in MongoDB
         const session = await Session.create({
             patient: patientId,
             doctor: doctorId,
@@ -309,16 +352,14 @@ const bookSession = asyncHandler(async (req, res) => {
                 callStatus: "Not Started",
             },
             paymentDetails: { 
-                transactionId: `TXN-${Date.now()}`, // Generate a fake transaction ID
-                amount: paymentAmount,  // ✅ Store the amount in session
-                method: "Credit Card",  // ✅ Assuming payment method is Credit Card
-                status: "Paid"
-            }
+                status: "Paid",
+                amount: paymentAmount  // ✅ Now storing the amount properly
+            },
         });
 
         console.log("Session Created Successfully:", session);
 
-        // ✅ Send Confirmation Email
+        // ✅ Send Confirmation Email to the Patient
         await sendEmail({
             to: email,
             subject: "Session Booking Confirmation",
