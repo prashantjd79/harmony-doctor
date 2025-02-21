@@ -9,7 +9,7 @@ const ticketSchema = new mongoose.Schema(
         },
         userType: {
             type: String,
-            enum: ['Doctor', 'Patient'],
+            enum: ['Doctor', 'Patient', 'Creator', 'Manager'], // ✅ Expanded user roles
             required: true,
         },
         message: {
@@ -18,11 +18,16 @@ const ticketSchema = new mongoose.Schema(
         },
         replies: [
             {
-                manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Manager' },
+                admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' }, // ✅ Admin can reply
                 message: { type: String, required: true },
                 date: { type: Date, default: Date.now },
             },
         ],
+        status: {
+            type: String,
+            enum: ['Open', 'In Progress', 'Resolved'], // ✅ Added status tracking
+            default: 'Open',
+        },
     },
     { timestamps: true }
 );
