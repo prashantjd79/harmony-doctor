@@ -78,23 +78,23 @@ router.post('/login', creatorLogin);
 
 // 🔹 **Articles Routes**
 router.post('/articles', protect, creatorProtect, singleUpload, createArticle);
-router.get('/articles', protect, creatorProtect, getArticles);
-router.get('/articles/:id', protect, creatorProtect, getArticleById);
+router.get('/articles',  getArticles);
+router.get('/articles/:id',  getArticleById);
 router.put('/articles/:id', protect, creatorProtect, singleUpload, updateArticle);
 router.delete('/articles/:id', protect, creatorProtect, deleteArticle);
 
 // 🔹 **Blogs Routes**
 router.post('/blogs', protect, creatorProtect, singleUpload, createBlog);
-router.get('/blogs/:id', protect, creatorProtect, getBlogById);
+router.get('/blogs/:id',  getBlogById);
 router.put('/blogs/:id', protect, creatorProtect, singleUpload, updateBlog);
 router.delete('/blogs/:id', protect, creatorProtect, deleteBlog);
-router.get("/all-blogs", protect, creatorProtect, getAllBlogs);
+router.get("/all-blogs",  getAllBlogs);
 
 // 🔹 **YouTube Blogs Routes**
 router.post('/youtube-blogs', protect, creatorProtect, createYoutubeBlog);
-router.get('/youtube-blogs/:id', protect, creatorProtect, getYoutubeBlogById);
+router.get('/youtube-blogs/:id',  getYoutubeBlogById);
 router.put('/youtube-blogs/:id', protect, creatorProtect, updateYoutubeBlog);
 router.delete('/youtube-blogs/:id', protect, creatorProtect, deleteYoutubeBlog);
-router.get("/youtube-blogs", protect, creatorProtect, getAllYouTubeBlogs);
+router.get("/youtube-blogs",  getAllYouTubeBlogs);
 
 module.exports = router;
