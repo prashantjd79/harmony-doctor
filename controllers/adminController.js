@@ -16,22 +16,12 @@ const Creator = require('../models/creatorModel');
 
 
 
-// ✅ Get Financial Details of Patients for Admin
-const getPatientFinancialDetails = asyncHandler(async (req, res) => {
-    if (req.userRole !== "admin") {
-        res.status(403);
-        throw new Error("Access denied. Only admins can access financial details.");
-    }
 
-    const financialDetails = await Session.aggregate([
-        {
-            $lookup: {
-                from: "patients",
-                localField: "patient",
-                foreignField: "_id",
-                as: "patientDetails"
-            }
-        },
+
+const getDoctorFinancialReport = asyncHandler(async (req, res) => {
+    console.log("🔍 Fetching Doctor Financial Report...");
+
+    const doctorPayments = await Session.aggregate([
         {
             $lookup: {
                 from: "doctors",
@@ -49,28 +39,66 @@ const getPatientFinancialDetails = asyncHandler(async (req, res) => {
             }
         },
         {
-            $project: {
-                sessionId: "$_id",
-                sessionDate: "$date",
-                patientId: { $arrayElemAt: ["$patientDetails._id", 0] },
-                patientName: { $arrayElemAt: ["$patientDetails.name", 0] },
-                patientEmail: { $arrayElemAt: ["$patientDetails.email", 0] },
-                doctorId: { $arrayElemAt: ["$doctorDetails._id", 0] },
-                doctorName: { $arrayElemAt: ["$doctorDetails.name", 0] },
-                serviceName: { $arrayElemAt: ["$serviceDetails.name", 0] },
-                paymentAmount: "$paymentDetails.amount",
-                promoCode: "$paymentDetails.promoCode",
-                paymentStatus: "$paymentDetails.status"
+            $lookup: {
+                from: "payments",
+                localField: "_id",
+                foreignField: "sessionId",
+                as: "paymentDetails"
             }
         },
-        { $sort: { sessionDate: -1 } }
+        {
+            $unwind: "$doctorDetails"
+        },
+        {
+            $unwind: "$serviceDetails"
+        },
+        {
+            $unwind: {
+                path: "$paymentDetails",
+                preserveNullAndEmptyArrays: true  // Handles unpaid sessions
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    doctorId: "$doctorDetails._id",
+                    doctorName: "$doctorDetails.name",
+                    serviceId: "$serviceDetails._id",
+                    serviceName: "$serviceDetails.name",
+                    doctorPrice: "$doctorDetails.pricing"  // Fetching doctor-defined price
+                },
+                sessionCount: { $sum: 1 },
+                totalEarnings: { $sum: { $ifNull: ["$paymentDetails.amount", 0] } }
+            }
+        },
+        {
+            $group: {
+                _id: "$_id.doctorId",
+                doctorName: { $first: "$_id.doctorName" },
+                services: {
+                    $push: {
+                        serviceId: "$_id.serviceId",
+                        serviceName: "$_id.serviceName",
+                        doctorPrice: "$_id.doctorPrice",
+                        sessionCount: "$sessionCount",
+                        totalEarnings: "$totalEarnings"
+                    }
+                },
+                totalSessions: { $sum: "$sessionCount" },
+                totalEarnings: { $sum: "$totalEarnings" }
+            }
+        },
+        { $sort: { totalEarnings: -1 } }
     ]);
 
+    console.log("📊 Doctor Financial Report:", doctorPayments);
+
     res.status(200).json({
-        message: "Patient financial details retrieved successfully.",
-        financialDetails
+        message: "Doctor financial report retrieved successfully.",
+        doctorPayments
     });
 });
+
 
 
 
@@ -800,7 +828,7 @@ module.exports = {
     approveManager,assignToManager,
     getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,getAllReviews,
     
- createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor,getAllSessionReviews,getPatientFinancialDetails
+ createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor,getAllSessionReviews,getDoctorFinancialReport
 
 };
 

@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
 const Patient = require('../models/patientModel');
-const generateOTP = require('../utils/generateOTP');
+const { generateOTP } = require('../utils/generateOTP'); // Ensure correct path
+
 const jwt = require('jsonwebtoken');
 const Service = require('../models/serviceModel');
 const Session = require('../models/sessionModel');
@@ -312,6 +313,7 @@ const viewServices = asyncHandler(async (req, res) => {
     const services = await Service.find().populate('doctorPricing.doctor', 'name specialization');
     res.status(200).json({ services });
 });
+
 
 const signupPatient = asyncHandler(async (req, res) => {
     const {
