@@ -11,6 +11,72 @@ const YoutubeBlog = require('../models/youtubeBlogModel.js');
 const Manager = require('../models/managerModel');
 const Creator = require('../models/creatorModel');
 
+
+
+
+
+
+// ✅ Get Financial Details of Patients for Admin
+const getPatientFinancialDetails = asyncHandler(async (req, res) => {
+    if (req.userRole !== "admin") {
+        res.status(403);
+        throw new Error("Access denied. Only admins can access financial details.");
+    }
+
+    const financialDetails = await Session.aggregate([
+        {
+            $lookup: {
+                from: "patients",
+                localField: "patient",
+                foreignField: "_id",
+                as: "patientDetails"
+            }
+        },
+        {
+            $lookup: {
+                from: "doctors",
+                localField: "doctor",
+                foreignField: "_id",
+                as: "doctorDetails"
+            }
+        },
+        {
+            $lookup: {
+                from: "services",
+                localField: "service",
+                foreignField: "_id",
+                as: "serviceDetails"
+            }
+        },
+        {
+            $project: {
+                sessionId: "$_id",
+                sessionDate: "$date",
+                patientId: { $arrayElemAt: ["$patientDetails._id", 0] },
+                patientName: { $arrayElemAt: ["$patientDetails.name", 0] },
+                patientEmail: { $arrayElemAt: ["$patientDetails.email", 0] },
+                doctorId: { $arrayElemAt: ["$doctorDetails._id", 0] },
+                doctorName: { $arrayElemAt: ["$doctorDetails.name", 0] },
+                serviceName: { $arrayElemAt: ["$serviceDetails.name", 0] },
+                paymentAmount: "$paymentDetails.amount",
+                promoCode: "$paymentDetails.promoCode",
+                paymentStatus: "$paymentDetails.status"
+            }
+        },
+        { $sort: { sessionDate: -1 } }
+    ]);
+
+    res.status(200).json({
+        message: "Patient financial details retrieved successfully.",
+        financialDetails
+    });
+});
+
+
+
+
+
+
 const createPromoCode = asyncHandler(async (req, res) => {
     const { code, discountPercentage, validTill, applicableTransactions, specialForMentalHealth } = req.body;
 
@@ -734,7 +800,7 @@ module.exports = {
     approveManager,assignToManager,
     getServiceById,getManagers,getCreators,getAdminStats,getTopCategories,getTopConsultants,getTopServices,getAllReviews,
     
- createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor,getAllSessionReviews
+ createPromoCode, getAllPromoCodes,  deletePromoCode,disapproveCreator,disapproveManager,disapproveDoctor,getAllSessionReviews,getPatientFinancialDetails
 
 };
 
