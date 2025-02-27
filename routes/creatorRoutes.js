@@ -7,7 +7,7 @@ const {
     creatorSignup,
     creatorLogin,
     createArticle,
-    getArticles,
+    // getArticles,
     getArticleById,
     updateArticle,
     deleteArticle,
@@ -19,8 +19,9 @@ const {
     updateYoutubeBlog,
     deleteYoutubeBlog,
     getYoutubeBlogById,
-    getAllBlogs,
-    getAllYouTubeBlogs
+    // getAllBlogs,
+    // getAllYouTubeBlogs
+    getMyArticles,getMyBlogs,getMyYoutubeBlogs
 } = require('../controllers/creatorController');
 
 const router = express.Router();
@@ -31,7 +32,7 @@ router.post('/login', creatorLogin);
 
 // 🔹 **Articles Routes**
 router.post('/articles', protect, creatorProtect, singleUpload, createArticle);
-router.get('/articles',  getArticles);
+// router.get('/articles',  getArticles);
 router.get('/articles/:id',  getArticleById);
 router.put('/articles/:id', protect, creatorProtect, singleUpload, updateArticle);
 router.delete('/articles/:id', protect, creatorProtect, deleteArticle);
@@ -41,13 +42,18 @@ router.post('/blogs', protect, creatorProtect, singleUpload, createBlog);
 router.get('/blogs/:id',  getBlogById);
 router.put('/blogs/:id', protect, creatorProtect, singleUpload, updateBlog);
 router.delete('/blogs/:id', protect, creatorProtect, deleteBlog);
-router.get("/all-blogs",  getAllBlogs);
+// router.get("/all-blogs",  getAllBlogs);
 
 // 🔹 **YouTube Blogs Routes**
 router.post('/youtube-blogs', protect, creatorProtect, createYoutubeBlog);
 router.get('/youtube-blogs/:id',  getYoutubeBlogById);
 router.put('/youtube-blogs/:id', protect, creatorProtect, updateYoutubeBlog);
 router.delete('/youtube-blogs/:id', protect, creatorProtect, deleteYoutubeBlog);
-router.get("/youtube-blogs",  getAllYouTubeBlogs);
+// router.get("/youtube-blogs",  getAllYouTubeBlogs);
+
+router.get("/my-blogs", protect, creatorProtect, getMyBlogs);
+router.get("/my-articles", protect, creatorProtect, getMyArticles);
+router.get("/my-youtube-blogs", protect, creatorProtect, getMyYoutubeBlogs);
+
 
 module.exports = router;

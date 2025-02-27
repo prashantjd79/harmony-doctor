@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 const Admin = require('../models/adminModel');
 
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30days' });
 };
 
 const adminSignup = asyncHandler(async (req, res) => {

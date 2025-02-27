@@ -11,6 +11,12 @@ const patientSchema = new mongoose.Schema(
         isEmailVerified: { type: Boolean, default: false }, // Email verification status
         password: { type: String, required: true }, // Password for login
         otp: { type: String, required: false },
+        securityQuestions: [
+            {
+                question: { type: String, required: true },
+                answer: { type: String, required: true } // ✅ Store hashed answer
+            }
+        ],
         isApproved: {
             type: Boolean,
             default: false,

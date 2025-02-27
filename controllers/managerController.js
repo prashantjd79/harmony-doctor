@@ -319,5 +319,37 @@ const getAllPatients = asyncHandler(async (req, res) => {
 
 
 
+// ✅ Get All Blogs Created by Creators
+const getAllBlogs = asyncHandler(async (req, res) => {
+    const blogs = await Blog.find({}).populate("creator", "name email"); // Fetch creator details
+    res.status(200).json({
+        message: "All blogs retrieved successfully.",
+        blogs
+    });
+});
 
-module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,replyToTicket,viewProfile,getAllManagers,getAllPatients,getManagerStats};
+// ✅ Get All Articles Created by Creators
+const getAllArticles = asyncHandler(async (req, res) => {
+    const articles = await Article.find({}).populate("creator", "name email"); // Fetch creator details
+    res.status(200).json({
+        message: "All articles retrieved successfully.",
+        articles
+    });
+});
+
+// ✅ Get All YouTube Blogs Created by Creators
+const getAllYoutubeBlogs = asyncHandler(async (req, res) => {
+    const youtubeBlogs = await YoutubeBlog.find({}).populate("creator", "name email"); // Fetch creator details
+    res.status(200).json({
+        message: "All YouTube blogs retrieved successfully.",
+        youtubeBlogs
+    });
+});
+
+
+
+
+
+
+
+module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,getAllBlogs, getAllArticles, getAllYoutubeBlogs ,replyToTicket,viewProfile,getAllManagers,getAllPatients,getManagerStats};

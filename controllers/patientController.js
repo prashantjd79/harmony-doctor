@@ -450,6 +450,71 @@ const viewServices = asyncHandler(async (req, res) => {
 });
 
 
+// const signupPatient = asyncHandler(async (req, res) => {
+//     const {
+//         name,
+//         email,
+//         contactNumber,
+//         birthday,
+//         gender,
+//         isTakingConsultation,
+//         age,
+//         address,
+//         password,
+//     } = req.body;
+
+//     // Validate required fields
+//     if (!name || !email || !contactNumber || !birthday || !gender || !age || !address || !password) {
+//         res.status(400);
+//         throw new Error('All fields (name, email, contactNumber, birthday, gender, age, address, password) are required');
+//     }
+
+//     // Check if the patient already exists
+//     const existingPatient = await Patient.findOne({ email });
+//     if (existingPatient) {
+//         res.status(400);
+//         throw new Error('Patient already exists with this email');
+//     }
+
+//     // Hash the password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Generate OTP
+//     const otp = generateOTP();
+
+//     // Create new patient
+//     const newPatient = await Patient.create({
+//         name,
+//         email,
+//         contactNumber,
+//         birthday,
+//         gender,
+//         isTakingConsultation: isTakingConsultation === 'Yes',
+//         isEmailVerified: false,
+//         otp,
+//         password: hashedPassword, // Save hashed password
+//         age,
+//         address,
+//     });
+
+//     // Send OTP via email
+//     const message = `Your OTP for email verification is: ${otp}`;
+//     try {
+//         await sendEmail({
+//             to: email,
+//             subject: 'Email Verification OTP',
+//             text: message,
+//         });
+//     } catch (error) {
+//         console.error('Failed to send OTP:', error.message);
+//     }
+
+//     res.status(201).json({
+//         message: 'Patient created successfully. OTP sent to email for verification.',
+//         patientId: newPatient._id,
+//     });
+// });
+
 const signupPatient = asyncHandler(async (req, res) => {
     const {
         name,
@@ -461,12 +526,18 @@ const signupPatient = asyncHandler(async (req, res) => {
         age,
         address,
         password,
+        securityQuestions // ✅ Expect security questions from frontend
     } = req.body;
 
     // Validate required fields
-    if (!name || !email || !contactNumber || !birthday || !gender || !age || !address || !password) {
+    if (!name || !email || !contactNumber || !birthday || !gender || !age || !address || !password || !securityQuestions) {
         res.status(400);
-        throw new Error('All fields (name, email, contactNumber, birthday, gender, age, address, password) are required');
+        throw new Error('All fields (including security questions) are required');
+    }
+
+    if (!Array.isArray(securityQuestions) || securityQuestions.length !== 3) {
+        res.status(400);
+        throw new Error("You must provide exactly 3 security questions with answers.");
     }
 
     // Check if the patient already exists
@@ -478,6 +549,14 @@ const signupPatient = asyncHandler(async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Hash security question answers
+    const hashedSecurityQuestions = await Promise.all(
+        securityQuestions.map(async (q) => ({
+            question: q.question,
+            answer: await bcrypt.hash(q.answer, 10) // Hash answers for security
+        }))
+    );
 
     // Generate OTP
     const otp = generateOTP();
@@ -495,6 +574,7 @@ const signupPatient = asyncHandler(async (req, res) => {
         password: hashedPassword, // Save hashed password
         age,
         address,
+        securityQuestions: hashedSecurityQuestions // ✅ Store security questions
     });
 
     // Send OTP via email
@@ -514,6 +594,8 @@ const signupPatient = asyncHandler(async (req, res) => {
         patientId: newPatient._id,
     });
 });
+
+
 
 
 // Patient Email Verification
@@ -1328,27 +1410,64 @@ const getPatientReviews = asyncHandler(async (req, res) => {
 });
 
 
+// const resetPassword = asyncHandler(async (req, res) => {
+//     const { oldPassword, newPassword } = req.body;
+//     const patient = await Patient.findById(req.user._id);
+
+//     if (!patient) {
+//         return res.status(404).json({ message: "Patient not found" });
+//     }
+
+//     // Check if old password is correct
+//     const isMatch = await bcrypt.compare(oldPassword, patient.password);
+//     if (!isMatch) {
+//         return res.status(400).json({ message: "Old password is incorrect" });
+//     }
+
+//     // Hash new password
+//     const salt = await bcrypt.genSalt(10);
+//     patient.password = await bcrypt.hash(newPassword, salt);
+//     await patient.save();
+
+//     res.status(200).json({ message: "Password reset successfully" });
+// });
+
 const resetPassword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-    const patient = await Patient.findById(req.user._id);
+    const { email, newPassword, securityAnswers } = req.body;
+
+    if (!email || !newPassword || !securityAnswers) {
+        return res.status(400).json({ error: "All fields (email, newPassword, securityAnswers) are required." });
+    }
+
+    const patient = await Patient.findOne({ email });
 
     if (!patient) {
-        return res.status(404).json({ message: "Patient not found" });
+        return res.status(404).json({ error: "Patient not found." });
     }
 
-    // Check if old password is correct
-    const isMatch = await bcrypt.compare(oldPassword, patient.password);
-    if (!isMatch) {
-        return res.status(400).json({ message: "Old password is incorrect" });
+    if (!Array.isArray(securityAnswers) || securityAnswers.length !== 3) {
+        return res.status(400).json({ error: "You must provide answers to all three security questions." });
     }
 
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    patient.password = await bcrypt.hash(newPassword, salt);
+    // ✅ Compare answers with hashed answers in database
+    const isCorrectAnswers = await Promise.all(
+        patient.securityQuestions.map(async (q, index) => {
+            return await bcrypt.compare(securityAnswers[index], q.answer);
+        })
+    );
+
+    if (!isCorrectAnswers.every(answer => answer === true)) {
+        return res.status(400).json({ error: "Security answers are incorrect." });
+    }
+
+    // ✅ Hash new password and update
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    patient.password = hashedPassword;
     await patient.save();
 
-    res.status(200).json({ message: "Password reset successfully" });
+    res.status(200).json({ message: "Password reset successfully." });
 });
+
 
 const getMedicalHistory = async (req, res) => {
     try {

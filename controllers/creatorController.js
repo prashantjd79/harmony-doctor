@@ -48,12 +48,12 @@ const createArticle = asyncHandler(async (req, res) => {
     });
 });
 
-const getArticles = asyncHandler(async (req, res) => {
-    const articles = await Article.find({ creator: req.user._id }) // Only creator's articles
-        .populate('categories')
-        .populate('creator', 'name email');
-    res.status(200).json(articles);
-});
+// const getArticles = asyncHandler(async (req, res) => {
+//     const articles = await Article.find({ creator: req.user._id }) // Only creator's articles
+//         .populate('categories')
+//         .populate('creator', 'name email');
+//     res.status(200).json(articles);
+// });
 
 const getArticleById = asyncHandler(async (req, res) => {
     const article = await Article.findOne({ _id: req.params.id, creator: req.user._id }) // Ensure ownership
@@ -461,43 +461,10 @@ const getYoutubeBlogById = asyncHandler(async (req, res) => {
 
 
 
-const getAllBlogs = asyncHandler(async (req, res) => {
-    try {
-        const blogs = await Blog.find().sort({ createdAt: -1 }); // Fetch all blogs sorted by latest
-        res.status(200).json({
-            success: true,
-            count: blogs.length,
-            blogs
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching blogs",
-            error: error.message
-        });
-    }
-});
 
 
 
-const getAllYouTubeBlogs = asyncHandler(async (req, res) => {
-    try {
-        // 🔹 Fetch all YouTube blogs sorted by latest
-        const youtubeBlogs = await YoutubeBlog.find().sort({ createdAt: -1 });
 
-        res.status(200).json({
-            success: true,
-            count: youtubeBlogs.length,
-            youtubeBlogs
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching YouTube blogs",
-            error: error.message
-        });
-    }
-});
 
 
 
@@ -552,9 +519,45 @@ const deleteYoutubeBlog = async (req, res) => {
 
 
 
+// ✅ Get Only the Creator's Blogs
+const getMyBlogs = asyncHandler(async (req, res) => {
+    const creatorId = req.user._id; // Get logged-in creator's ID
+    const blogs = await Blog.find({ creator: creatorId });
+
+    res.status(200).json({
+        message: "Your blogs retrieved successfully.",
+        blogs
+    });
+});
+
+// ✅ Get Only the Creator's Articles
+const getMyArticles = asyncHandler(async (req, res) => {
+    const creatorId = req.user._id; // Get logged-in creator's ID
+    const articles = await Article.find({ creator: creatorId });
+
+    res.status(200).json({
+        message: "Your articles retrieved successfully.",
+        articles
+    });
+});
+
+// ✅ Get Only the Creator's YouTube Blogs
+const getMyYoutubeBlogs = asyncHandler(async (req, res) => {
+    const creatorId = req.user._id; // Get logged-in creator's ID
+    const youtubeBlogs = await YoutubeBlog.find({ creator: creatorId });
+
+    res.status(200).json({
+        message: "Your YouTube blogs retrieved successfully.",
+        youtubeBlogs
+    });
+});
+
+module.exports = {};
+
+
 
 module.exports={creatorSignup,creatorLogin, createArticle,
-    getArticles,
+    // getArticles,
     getArticleById,
     updateArticle,
     deleteArticle,
@@ -563,4 +566,4 @@ module.exports={creatorSignup,creatorLogin, createArticle,
     updateYoutubeBlog,
     deleteYoutubeBlog,
     getYoutubeBlogById,
-createBlog,updateBlog,deleteBlog,getAllYouTubeBlogs,getAllBlogs};
+createBlog,updateBlog,deleteBlog, getMyBlogs, getMyArticles, getMyYoutubeBlogs };

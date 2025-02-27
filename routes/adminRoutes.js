@@ -59,8 +59,8 @@ router.get('/sessions', protect, viewSessionHistories);
 router.get('/doctors', protect, viewDoctorProfiles); // View all doctor profiles
 router.put('/doctors/:id/approve', protect, approveDoctor); // Approve a doctor
 
-router.put('/approve-manager/:id', approveManager); // Approve Manager
-router.put('/approve-creator/:id', approveCreator); // Approve Creator
+router.put('/approve-manager/:id', protect, adminProtect,approveManager); // Approve Manager
+router.put('/approve-creator/:id', protect, adminProtect, approveCreator); // Approve Creator
 router.put('/assign-to-manager', protect, adminProtect, assignToManager);
 
 router.get("/managers", protect, adminProtect, getManagers);
