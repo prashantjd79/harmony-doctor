@@ -108,7 +108,7 @@ router.get("/promo-codes/:patientId", protect, patientProtect, getPatientPromoCo
 router.get('/my-history', protect, patientProtect, getMyHistory);
 router.get('/doctor/:doctorId/services', getDoctorServices);
 router.get('/reviews', protect, patientProtect, getPatientReviews);
-router.put('/reset-password', protect, patientProtect, resetPassword);
+router.put('/reset-password',  resetPassword);
 
 
 module.exports = router;
