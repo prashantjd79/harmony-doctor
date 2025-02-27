@@ -316,19 +316,28 @@ const updateService = asyncHandler(async (req, res) => {
 });
 
 const deleteService = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    const service = await Service.findById(id);
+        console.log("🔍 Deleting Service ID:", id);
 
-    if (!service) {
-        res.status(404);
-        throw new Error('Service not found');
+        const service = await Service.findByIdAndDelete(id);
+
+        if (!service) {
+            console.log("❌ Service Not Found");
+            return res.status(404).json({ error: "Service not found" });
+        }
+
+        console.log("✅ Service Deleted Successfully");
+
+        res.status(200).json({ message: "Service deleted successfully" });
+
+    } catch (error) {
+        console.error("❌ Error in deleteService:", error.message);
+        res.status(500).json({ error: "Server error" });
     }
-
-    await service.remove();
-
-    res.status(200).json({ message: 'Service deleted successfully' });
 });
+
 
 const createCategory = asyncHandler(async (req, res) => {
     const { name, description, icon } = req.body;

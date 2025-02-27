@@ -13,13 +13,13 @@ router.put('/toggle-profile-status', protect, toggleProfileStatus);
 router.get('/profiles/:userType/:userId', protect, viewProfile);
 router.get("/stats", protect, managerProtect, getManagerStats);
 
-router.get("/all-managers", protect, managerProtect, getAllManagers);
+
 
 router.get("/blogs", protect, managerProtect, getAllBlogs);
 router.get("/articles", protect, managerProtect, getAllArticles);
 router.get("/youtube-blogs", protect, managerProtect, getAllYoutubeBlogs);
 
 // ✅ Get all patients
-router.get("/all-patients", protect, managerProtect, getAllPatients);
+
 
 module.exports = router;

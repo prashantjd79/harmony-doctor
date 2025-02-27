@@ -88,27 +88,17 @@ router.post(
     medicalHistoryUpload, // ✅ Uses correct upload middleware
     uploadMedicalHistory
 );
-// ✅ Payments
 router.post("/pay", protect, payForSession);
 router.get("/payment-history", protect, viewPaymentHistory);
-
 router.get('/sessions/upcoming', protect, patientProtect, getUpcomingSessions);
-
-router.post('/mood', protect, submitMood); // Submit mood
-router.get('/mood/history', protect, getMoodHistory); // View mood history
-
+router.post('/mood', protect, submitMood);
+router.get('/mood/history', protect, getMoodHistory); 
 router.post('/mood/submit', protect, submitMoodContinuum);
-
-// 📌 Get Mood Continuum History
 router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
-
 router.post("/apply-promo-code", protect, patientProtect, applyPromoCode);
 router.get("/promo-codes/:patientId", protect, patientProtect, getPatientPromoCodes);
-
 router.get('/my-history', protect, patientProtect, getMyHistory);
 router.get('/doctor/:doctorId/services', getDoctorServices);
 router.get('/reviews', protect, patientProtect, getPatientReviews);
 router.put('/reset-password',  resetPassword);
-
-
 module.exports = router;
