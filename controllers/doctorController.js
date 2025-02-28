@@ -381,10 +381,32 @@ const getServicesEnrolled = asyncHandler(async (req, res) => {
 
 
 
+// ✅ Doctor gets assigned Manager
+const getDoctorManager = asyncHandler(async (req, res) => {
+    const doctorId = req.user._id; // Get logged-in Doctor ID
+
+    const manager = await Manager.findOne({ assignedDoctors: doctorId }).select("name email");
+
+    if (!manager) {
+        return res.status(404).json({ error: "No manager assigned to this doctor" });
+    }
+
+    res.status(200).json({
+        message: "Assigned manager retrieved successfully.",
+        manager
+    });
+});
+
+
+
+
+
+
 
 
 module.exports = { 
     getCategories, 
+    getDoctorManager,
     getServices, 
     viewUpcomingSessions, 
     viewPatientProfile, 

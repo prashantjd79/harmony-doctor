@@ -90,6 +90,7 @@ const {
     getPatientDetails,
     getCompletedSessions,
     getServicesEnrolled,
+    getDoctorManager,
     requestPasswordReset,resetPasswordWithOTP
      
 } = require('../controllers/doctorController');
@@ -105,7 +106,7 @@ router.post("/request-password-reset", requestPasswordReset);
 
 // Route to reset password using OTP
 router.put("/reset-password", resetPasswordWithOTP);
-
+router.get("/my-manager", protect, doctorProtect, getDoctorManager);
 
 
 // 📌 Doctor Services

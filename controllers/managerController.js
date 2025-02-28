@@ -352,4 +352,31 @@ const getAllYoutubeBlogs = asyncHandler(async (req, res) => {
 
 
 
-module.exports={managerSignup,managerLogin,approveContent,toggleProfileStatus,getAllBlogs, getAllArticles, getAllYoutubeBlogs ,replyToTicket,viewProfile,getAllManagers,getAllPatients,getManagerStats};
+
+// ✅ Manager gets all assigned Doctors & Creators
+const getAssignedDoctorsAndCreators = asyncHandler(async (req, res) => {
+    const managerId = req.user._id; // Get logged-in Manager ID
+
+    const manager = await Manager.findById(managerId)
+        .populate("assignedDoctors", "name email")
+        .populate("assignedCreators", "name email");
+
+    if (!manager) {
+        return res.status(404).json({ error: "Manager not found" });
+    }
+
+    res.status(200).json({
+        message: "Assigned doctors and creators retrieved successfully.",
+        assignedDoctors: manager.assignedDoctors,
+        assignedCreators: manager.assignedCreators
+    });
+});
+
+
+
+
+
+
+
+
+module.exports={managerSignup,getAssignedDoctorsAndCreators,managerLogin,approveContent,toggleProfileStatus,getAllBlogs, getAllArticles, getAllYoutubeBlogs ,replyToTicket,viewProfile,getAllManagers,getAllPatients,getManagerStats};

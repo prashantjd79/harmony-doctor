@@ -19,6 +19,7 @@ const {
     updateYoutubeBlog,
     deleteYoutubeBlog,
     getYoutubeBlogById,
+    getCreatorManager,
     // getAllBlogs,
     // getAllYouTubeBlogs
     getMyArticles,getMyBlogs,getMyYoutubeBlogs
@@ -50,6 +51,7 @@ router.get('/youtube-blogs/:id',  getYoutubeBlogById);
 router.put('/youtube-blogs/:id', protect, creatorProtect, updateYoutubeBlog);
 router.delete('/youtube-blogs/:id', protect, creatorProtect, deleteYoutubeBlog);
 // router.get("/youtube-blogs",  getAllYouTubeBlogs);
+router.get("/my-manager", protect, creatorProtect, getCreatorManager);
 
 router.get("/my-blogs", protect, creatorProtect, getMyBlogs);
 router.get("/my-articles", protect, creatorProtect, getMyArticles);

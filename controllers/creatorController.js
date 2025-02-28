@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Article = require('../models/articleModel');
 const { required } = require('joi');
-
+const Manager = require('../models/managerModel');
 const createArticle = asyncHandler(async (req, res) => {
     const { heading, content, categories, tags, description } = req.body;
     let parsedCategories = [];
@@ -552,11 +552,33 @@ const getMyYoutubeBlogs = asyncHandler(async (req, res) => {
     });
 });
 
-module.exports = {};
 
 
 
-module.exports={creatorSignup,creatorLogin, createArticle,
+
+// ✅ Creator gets assigned Manager
+const getCreatorManager = asyncHandler(async (req, res) => {
+    const creatorId = req.user._id; // Get logged-in Creator ID
+
+    const manager = await Manager.findOne({ assignedCreators: creatorId }).select("name email");
+
+    if (!manager) {
+        return res.status(404).json({ error: "No manager assigned to this creator" });
+    }
+
+    res.status(200).json({
+        message: "Assigned manager retrieved successfully.",
+        manager
+    });
+});
+
+
+
+
+
+
+
+module.exports={creatorSignup,creatorLogin, createArticle,getCreatorManager,
     // getArticles,
     getArticleById,
     updateArticle,
