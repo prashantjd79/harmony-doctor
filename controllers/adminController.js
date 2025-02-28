@@ -676,14 +676,42 @@ const getTopServices = asyncHandler(async (req, res) => {
             }
         },
         { $sort: { totalBookings: -1 } },
-        { $limit: 5 }
+        { $limit: 5 },
+        {
+            $lookup: {
+                from: "services",
+                localField: "_id",
+                foreignField: "_id",
+                as: "serviceDetails"
+            }
+        },
+        { $unwind: "$serviceDetails" },
+        {
+            $lookup: {
+                from: "categories",
+                localField: "serviceDetails.category",
+                foreignField: "_id",
+                as: "categoryDetails"
+            }
+        },
+        { $unwind: "$categoryDetails" },
+        {
+            $project: {
+                _id: 0,
+                serviceId: "$_id",
+                serviceName: "$serviceDetails.name",
+                categoryName: "$categoryDetails.name",
+                totalBookings: 1
+            }
+        }
     ]);
 
-    const services = await Service.find({ _id: { $in: topServices.map(s => s._id) } })
-        .select("name category price");
-
-    res.status(200).json(services);
+    res.status(200).json({
+        message: "Top services retrieved successfully.",
+        topServices
+    });
 });
+
 
 const getTopCategories = asyncHandler(async (req, res) => {
     const topCategories = await Session.aggregate([
