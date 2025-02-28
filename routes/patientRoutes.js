@@ -95,9 +95,9 @@ router.post('/mood', protect, submitMood);
 router.get('/mood/history', protect, getMoodHistory); 
 router.post('/mood/submit', protect, submitMoodContinuum);
 router.get('/mood/continuum-history', protect, getMoodContinuumHistory);
-router.post("/apply-promo-code", protect, patientProtect, applyPromoCode);
-router.get("/promo-codes/:patientId", protect, patientProtect, getPatientPromoCodes);
-router.get('/my-history', protect, patientProtect, getMyHistory);
+
+
+
 router.get('/doctor/:doctorId/services', getDoctorServices);
 router.get('/reviews', protect, patientProtect, getPatientReviews);
 router.put('/reset-password',  resetPassword);

@@ -21,7 +21,7 @@ const {
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
-const { createPromoCode, getAllPromoCodes,  deletePromoCode, } = require("../controllers/adminController");
+
 
 // Authentication routes
 router.get("/session-reviews", protect, adminProtect, getAllSessionReviews);
@@ -56,10 +56,6 @@ router.get("/creators", protect, adminProtect, getCreators);
 
 
 
-router.post("/promo-code", protect, adminProtect, createPromoCode);
-router.get("/promo-codes", protect, adminProtect, getAllPromoCodes);
-
-router.delete("/promo-code/:id", protect, adminProtect, deletePromoCode);
 
 
 

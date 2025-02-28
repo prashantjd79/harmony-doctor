@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
-const { getChat, sendMessage, closeChat,deleteChat } = require('../controllers/chatController');
+const { getChat, sendMessage, closeChat, } = require('../controllers/chatController');
 
 // 📌 Route to get or create chat for a session
 router.get('/:sessionId', protect, getChat);

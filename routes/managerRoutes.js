@@ -9,7 +9,7 @@ router.put('/reply-ticket', protect, replyToTicket);
 router.post('/signup', managerSignup);
 router.post('/login', managerLogin); 
 router.put('/approve-content', protect, approveContent);
-router.put('/toggle-profile-status', protect, toggleProfileStatus);
+// router.put('/toggle-profile-status', protect, toggleProfileStatus);
 router.get('/profiles/:userType/:userId', protect, viewProfile);
 router.get("/stats", protect, managerProtect, getManagerStats);
 
