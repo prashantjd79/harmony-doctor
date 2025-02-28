@@ -353,24 +353,31 @@ const getAllYoutubeBlogs = asyncHandler(async (req, res) => {
 
 
 
-// ✅ Manager gets all assigned Doctors & Creators
+
+
+// ✅ Get Assigned Doctors & Creators for a Manager
 const getAssignedDoctorsAndCreators = asyncHandler(async (req, res) => {
     const managerId = req.user._id; // Get logged-in Manager ID
 
-    const manager = await Manager.findById(managerId)
-        .populate("assignedDoctors", "name email")
-        .populate("assignedCreators", "name email");
+    const manager = await Manager.findById(managerId);
 
     if (!manager) {
         return res.status(404).json({ error: "Manager not found" });
     }
 
+    // ✅ Fetch unique Doctors & Creators to prevent duplication
+    const assignedDoctors = await Doctor.find({ _id: { $in: [...new Set(manager.assignedDoctors)] } }).select("name email");
+    const assignedCreators = await Creator.find({ _id: { $in: [...new Set(manager.assignedCreators)] } }).select("name email");
+
     res.status(200).json({
         message: "Assigned doctors and creators retrieved successfully.",
-        assignedDoctors: manager.assignedDoctors,
-        assignedCreators: manager.assignedCreators
+        assignedDoctors,
+        assignedCreators
     });
 });
+
+
+
 
 
 

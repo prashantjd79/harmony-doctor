@@ -16,13 +16,13 @@ const {
     viewDoctorProfiles,
     approveDoctor,
     approveManager,
-    approveCreator,assignToManager,getAllReviews,disapproveCreator,disapproveDoctor,disapproveManager,getAllSessionReviews,
+    approveCreator,assignToManager,getAllReviews,disapproveCreator,disapproveDoctor,disapproveManager,getAllSessionReviews,editAssignedToManager,
     getServiceById,getManagers,getCreators,getTopConsultants,getTopCategories,getTopServices,getDoctorFinancialReport
 } = require('../controllers/adminController');
 const { adminSignup, adminLogin } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
-
+router.put("/edit-assigned-to-manager", protect, adminProtect, editAssignedToManager);
 // Authentication routes
 router.get("/session-reviews", protect, adminProtect, getAllSessionReviews);
 router.post('/signup', adminSignup);

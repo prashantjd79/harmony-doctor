@@ -789,9 +789,41 @@ const getAllSessionReviews = asyncHandler(async (req, res) => {
 
 
 
+// ✅ Edit (Update) Assigned Doctors & Creators for a Manager
+const editAssignedToManager = asyncHandler(async (req, res) => {
+    const { managerId, doctorIds, creatorIds } = req.body;
+
+    // Validate manager
+    const manager = await Manager.findById(managerId);
+    if (!manager) {
+        return res.status(404).json({ error: "Manager not found." });
+    }
+
+    // Update assigned Doctors and Creators
+    if (doctorIds) {
+        // Ensure only unique doctor IDs are stored
+        manager.assignedDoctors = [...new Set(doctorIds)];
+    }
+    if (creatorIds) {
+        // Ensure only unique creator IDs are stored
+        manager.assignedCreators = [...new Set(creatorIds)];
+    }
+
+    await manager.save();
+
+    res.status(200).json({
+        message: "Assigned doctors and creators updated successfully.",
+        manager,
+    });
+});
+
+
+
+
 
 module.exports = {
     createCategory,
+    editAssignedToManager,
     getCategories,
     updateCategory,
     deleteCategory,
